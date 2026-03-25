@@ -1256,6 +1256,11 @@
       return new CanvasLayer();
     }
 
+    function getTransitionDuration() {
+      const playbackStepMs = Number(speedSelect.value || 1000);
+      return Math.max(90, Math.min(520, playbackStepMs * 0.68));
+    }
+
     function animateOpacity(layer, key, target, duration = 110) {
       if (!layer) return;
       if (!animateOpacity.rafMap) animateOpacity.rafMap = new Map();
@@ -1567,10 +1572,11 @@
         layers[nextBuffer].orig.setData(originalBitmap, bounds);
         layers[nextBuffer].seg.setTint(tintColor).setData(segmentedBitmap, bounds);
 
-        animateOpacity(layers[activeBuffer].orig, "orig-out", 0);
-        animateOpacity(layers[activeBuffer].seg, "seg-out", 0);
-        animateOpacity(layers[nextBuffer].orig, "orig-in", Number(origOpacityInput.value));
-        animateOpacity(layers[nextBuffer].seg, "seg-in", Number(segOpacityInput.value));
+        const transitionDuration = getTransitionDuration();
+        animateOpacity(layers[activeBuffer].orig, "orig-out", 0, transitionDuration);
+        animateOpacity(layers[activeBuffer].seg, "seg-out", 0, transitionDuration);
+        animateOpacity(layers[nextBuffer].orig, "orig-in", Number(origOpacityInput.value), transitionDuration);
+        animateOpacity(layers[nextBuffer].seg, "seg-in", Number(segOpacityInput.value), transitionDuration);
 
         activeBuffer = nextBuffer;
 
