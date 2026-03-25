@@ -1,0 +1,1779 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bangalore Lake Monitor · GIS</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="">
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #080c10;
+      --panel: #0d1117;
+      --border: rgba(255,255,255,0.07);
+      --border-hi: rgba(255,255,255,0.14);
+      --text: #e8edf2;
+      --muted: #5a6a7a;
+      --accent: #00d4ff;
+      --accent2: #00ff9d;
+      --danger: #ff4d6a;
+      --panel-w: 300px;
+      --header-h: 52px;
+      --footer-h: 80px;
+      --radius: 8px;
+      --shadow: 0 18px 44px rgba(0,0,0,0.26);
+    }
+
+    html, body {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background: var(--bg);
+      color: var(--text);
+      font-family: "Inter", sans-serif;
+      font-size: 13px;
+    }
+
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      background:
+        radial-gradient(circle at top right, rgba(0,212,255,0.08), transparent 28%),
+        radial-gradient(circle at bottom left, rgba(0,255,157,0.06), transparent 24%);
+      pointer-events: none;
+    }
+
+    .app {
+      display: grid;
+      width: 100vw;
+      height: 100vh;
+      grid-template-columns: var(--panel-w) 1fr;
+      grid-template-rows: var(--header-h) 1fr var(--footer-h);
+      grid-template-areas:
+        "header header"
+        "sidebar map"
+        "sidebar timeline";
+    }
+
+    .app.sidebar-collapsed {
+      grid-template-columns: 0 1fr;
+    }
+
+    header {
+      grid-area: header;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      padding: 0 20px;
+      background: rgba(13,17,23,0.94);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border);
+      z-index: 120;
+    }
+
+    .logo-mark {
+      width: 28px;
+      height: 28px;
+      border-radius: 7px;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #001018;
+      font-size: 14px;
+      font-weight: 800;
+      flex-shrink: 0;
+    }
+
+    .logo-text {
+      font-size: 15px;
+      font-weight: 800;
+      letter-spacing: -0.25px;
+    }
+
+    .logo-sub {
+      font-size: 11px;
+      color: var(--muted);
+      font-family: "DM Mono", monospace;
+      margin-top: 1px;
+    }
+
+    .sep { flex: 1; }
+
+    .sidebar-toggle,
+    .ctrl-btn {
+      border: 1px solid var(--border-hi);
+      background: rgba(255,255,255,0.04);
+      color: var(--text);
+      cursor: pointer;
+      transition: background .18s ease, border-color .18s ease, transform .18s ease;
+    }
+
+    .sidebar-toggle:hover,
+    .ctrl-btn:hover {
+      background: rgba(255,255,255,0.1);
+      border-color: rgba(255,255,255,0.22);
+    }
+
+    .sidebar-toggle {
+      width: 34px;
+      height: 34px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .sidebar-toggle svg,
+    .ctrl-btn svg {
+      width: 16px;
+      height: 16px;
+      stroke: currentColor;
+      fill: none;
+      stroke-width: 1.8;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    .status-pill {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      padding: 5px 10px;
+      border-radius: 999px;
+      border: 1px solid var(--border);
+      font-size: 11px;
+      font-family: "DM Mono", monospace;
+      color: var(--muted);
+    }
+
+    .header-meta {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-left: 10px;
+      flex-shrink: 0;
+    }
+
+    .header-reference {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 2px;
+      padding: 5px 9px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: rgba(255,255,255,0.03);
+      color: var(--muted);
+      font-size: 9px;
+      font-family: "DM Mono", monospace;
+      line-height: 1.2;
+    }
+
+    .header-reference-top,
+    .header-reference-bottom {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      white-space: nowrap;
+    }
+
+    .header-reference strong,
+    .header-reference-top strong {
+      color: var(--text);
+      font-weight: 500;
+    }
+
+    .header-reference a {
+      color: var(--accent);
+      text-decoration: none;
+    }
+
+    .header-reference a:hover {
+      text-decoration: underline;
+    }
+
+    .status-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--accent2);
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.35; }
+    }
+
+    aside {
+      grid-area: sidebar;
+      background: rgba(13,17,23,0.94);
+      backdrop-filter: blur(14px);
+      border-right: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      z-index: 60;
+      min-width: 0;
+      transition: transform .26s ease, opacity .18s ease, border-color .18s ease;
+      transform-origin: left center;
+    }
+
+    .app.sidebar-collapsed aside {
+      transform: translateX(-100%);
+      opacity: 0;
+      pointer-events: none;
+      border-right-color: transparent;
+    }
+
+    .sidebar-section {
+      border-bottom: 1px solid var(--border);
+      padding: 16px;
+    }
+
+    .section-label {
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 1.8px;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 8px;
+    }
+
+    .lake-select-wrap { position: relative; }
+
+    select {
+      width: 100%;
+      appearance: none;
+      border: 1px solid var(--border-hi);
+      background: rgba(255,255,255,0.03);
+      color: var(--text);
+      border-radius: var(--radius);
+      padding: 8px 32px 8px 10px;
+      font-family: "Inter", sans-serif;
+      font-size: 12px;
+      cursor: pointer;
+    }
+
+    select:focus { outline: none; border-color: var(--accent); }
+
+    option {
+      background: var(--panel);
+      color: var(--text);
+    }
+
+    .select-chevron {
+      position: absolute;
+      right: 10px;
+      top: 50%;
+      transform: translateY(-50%);
+      pointer-events: none;
+      color: var(--muted);
+    }
+
+    .stat-block,
+    .chart-wrap,
+    .detail-card {
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: rgba(255,255,255,0.03);
+      box-shadow: var(--shadow);
+    }
+
+    .stat-block {
+      padding: 10px;
+      display: flex;
+      align-items: flex-end;
+      gap: 8px;
+      position: relative;
+      overflow: hidden;
+      margin-bottom: 8px;
+    }
+
+    .stat-block::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(135deg, transparent 54%, rgba(0,212,255,0.07));
+      pointer-events: none;
+    }
+
+    .stat-num {
+      font-size: 29px;
+      line-height: 1;
+      font-weight: 800;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .stat-num.up { color: var(--accent2); }
+    .stat-num.down { color: var(--danger); }
+
+    .stat-unit,
+    .stat-delta,
+    .slider-val,
+    .coords-block,
+    .map-badge,
+    .status-message,
+    .timeline-current-label,
+    .timeline-labels,
+    .speed-select {
+      font-family: "DM Mono", monospace;
+    }
+
+    .stat-unit {
+      color: var(--muted);
+      font-size: 11px;
+      padding-bottom: 4px;
+    }
+
+    .stat-delta {
+      margin-left: auto;
+      font-size: 11px;
+      padding-bottom: 4px;
+    }
+
+    .stat-delta.up { color: var(--accent2); }
+    .stat-delta.flat { color: var(--muted); }
+    .stat-delta.down { color: var(--danger); }
+
+    .chart-wrap {
+      height: 180px;
+      padding: 8px;
+    }
+
+    .chart-wrap canvas {
+      cursor: pointer;
+    }
+
+    .detail-grid {
+      display: grid;
+      gap: 6px;
+    }
+
+    .detail-card {
+      padding: 8px;
+    }
+
+    .detail-key {
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 1.4px;
+      color: var(--muted);
+      margin-bottom: 6px;
+    }
+
+    .detail-val {
+      font-size: 11px;
+      line-height: 1.2;
+      word-break: break-word;
+    }
+
+    .slider-row { margin-bottom: 8px; }
+    .slider-row:last-child { margin-bottom: 0; }
+
+    .slider-help {
+      color: var(--muted);
+      font-size: 10px;
+      line-height: 1.35;
+      margin-bottom: 8px;
+    }
+
+    .toggle-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      padding: 8px 10px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: rgba(255,255,255,0.03);
+    }
+
+    .toggle-copy {
+      min-width: 0;
+    }
+
+    .toggle-title {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--text);
+    }
+
+    .toggle-sub {
+      margin-top: 2px;
+      color: var(--muted);
+      font-size: 9px;
+      line-height: 1.2;
+    }
+
+    .switch {
+      position: relative;
+      width: 38px;
+      height: 22px;
+      flex-shrink: 0;
+    }
+
+    .switch input {
+      position: absolute;
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .switch-slider {
+      position: absolute;
+      inset: 0;
+      border-radius: 999px;
+      background: rgba(255,255,255,0.12);
+      border: 1px solid var(--border-hi);
+      transition: background .18s ease, border-color .18s ease;
+      cursor: pointer;
+    }
+
+    .switch-slider::after {
+      content: "";
+      position: absolute;
+      top: 2px;
+      left: 2px;
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      background: #fff;
+      transition: transform .18s ease;
+    }
+
+    .switch input:checked + .switch-slider {
+      background: rgba(0,212,255,0.24);
+      border-color: rgba(0,212,255,0.42);
+    }
+
+    .switch input:checked + .switch-slider::after {
+      transform: translateX(16px);
+    }
+
+    .slider-label {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 4px;
+      color: var(--muted);
+      font-size: 10px;
+    }
+
+    .slider-val { color: var(--text); }
+
+    input[type="range"] {
+      width: 100%;
+      appearance: none;
+      height: 3px;
+      border-radius: 999px;
+      background: rgba(255,255,255,0.1);
+      cursor: pointer;
+      outline: none;
+    }
+
+    input[type="range"]::-webkit-slider-thumb {
+      appearance: none;
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      background: var(--accent);
+      border: 2px solid var(--panel);
+      box-shadow: 0 0 0 4px rgba(0,212,255,0.14);
+      cursor: pointer;
+    }
+
+    .sidebar-spacer { display: none; }
+
+    .coords-block {
+      position: absolute;
+      right: 12px;
+      bottom: 12px;
+      z-index: 620;
+      padding: 0;
+      background: transparent;
+      border: 0;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 4px 12px;
+      font-size: 10px;
+      color: rgba(232,237,242,0.72);
+      text-shadow: 0 1px 2px rgba(0,0,0,0.8);
+      pointer-events: none;
+    }
+
+    .coords-block span:nth-child(odd) { color: rgba(232,237,242,0.72); }
+    .coords-block span:nth-child(even) { color: rgba(255,255,255,0.98); }
+
+    #map-container {
+      grid-area: map;
+      position: relative;
+      overflow: hidden;
+      background:
+        radial-gradient(circle at 20% 10%, rgba(0,212,255,0.08), transparent 22%),
+        radial-gradient(circle at 80% 90%, rgba(0,255,157,0.07), transparent 20%),
+        #081018;
+    }
+
+    #map {
+      width: 100%;
+      height: 100%;
+    }
+
+    #loading-bar-wrap {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 2px;
+      z-index: 700;
+    }
+
+    #loading-bar {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, var(--accent), var(--accent2));
+      transition: width .2s ease;
+    }
+
+    .map-badge,
+    .status-message {
+      position: absolute;
+      z-index: 600;
+      border: 1px solid var(--border-hi);
+      border-radius: var(--radius);
+      background: rgba(8,12,16,0.88);
+      backdrop-filter: blur(10px);
+    }
+
+    .map-badge {
+      top: 12px;
+      right: 12px;
+      padding: 10px 12px;
+      min-width: 180px;
+    }
+
+    .map-badge-date {
+      color: var(--accent);
+      font-size: 13px;
+      font-weight: 500;
+    }
+
+    .map-badge-lake {
+      color: var(--muted);
+      font-size: 10px;
+      margin-top: 3px;
+    }
+
+    .status-message {
+      left: 12px;
+      bottom: 12px;
+      padding: 8px 10px;
+      color: var(--text);
+      font-size: 10px;
+      max-width: min(420px, calc(100% - 24px));
+      opacity: 0;
+      transform: translateY(6px);
+      transition: opacity .18s ease, transform .18s ease;
+      pointer-events: none;
+    }
+
+    .status-message.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .status-message.error {
+      border-color: rgba(255,77,106,0.38);
+      color: #ffd6dd;
+    }
+
+    footer {
+      grid-area: timeline;
+      background: rgba(13,17,23,0.96);
+      backdrop-filter: blur(12px);
+      border-top: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      padding: 0 16px;
+      z-index: 120;
+    }
+
+    .playback-controls {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-shrink: 0;
+    }
+
+    .ctrl-btn {
+      width: 32px;
+      height: 32px;
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .ctrl-btn.play-btn {
+      width: 36px;
+      height: 36px;
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #001018;
+    }
+
+    .ctrl-btn.play-btn:hover {
+      background: #24e4ff;
+    }
+
+    .ctrl-btn.play-btn svg {
+      width: 12px;
+      height: 12px;
+      fill: currentColor;
+      stroke: none;
+    }
+
+    .ctrl-btn:not(.play-btn) svg {
+      fill: currentColor;
+      stroke: none;
+      width: 14px;
+      height: 14px;
+    }
+
+    .speed-select {
+      border: 1px solid var(--border);
+      background: rgba(255,255,255,0.04);
+      color: var(--muted);
+      border-radius: 6px;
+      padding: 5px 8px;
+      font-size: 11px;
+    }
+
+    .timeline-wrap {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 7px;
+      min-width: 0;
+    }
+
+    .timeline-current-label {
+      text-align: center;
+      color: var(--accent);
+      font-size: 11px;
+    }
+
+    .timeline-track-row {
+      position: relative;
+      height: 4px;
+    }
+
+    .timeline-track-bg,
+    .timeline-track-fill {
+      position: absolute;
+      inset: 0;
+      border-radius: 999px;
+      pointer-events: none;
+    }
+
+    .timeline-track-bg {
+      background: rgba(255,255,255,0.08);
+    }
+
+    .timeline-track-fill {
+      inset: 0 auto 0 0;
+      width: 0%;
+      background: linear-gradient(90deg, var(--accent), var(--accent2));
+      transition: width .1s linear;
+    }
+
+    #timeline-slider {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      appearance: none;
+      background: transparent;
+      cursor: pointer;
+      outline: none;
+    }
+
+    #timeline-slider::-webkit-slider-thumb {
+      appearance: none;
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      background: #fff;
+      border: 2px solid var(--accent);
+      box-shadow: 0 0 0 3px rgba(0,212,255,0.2);
+      cursor: pointer;
+    }
+
+    .timeline-labels {
+      display: flex;
+      justify-content: space-between;
+      color: var(--muted);
+      font-size: 10px;
+    }
+
+    .leaflet-container { background: transparent !important; }
+    .leaflet-pane, .leaflet-tile, .leaflet-image-layer, canvas { backface-visibility: hidden; }
+    .leaflet-control-zoom {
+      border: 1px solid var(--border-hi) !important;
+      border-radius: var(--radius) !important;
+      overflow: hidden;
+    }
+    .leaflet-control-zoom a {
+      width: 30px !important;
+      height: 30px !important;
+      line-height: 30px !important;
+      font-size: 16px !important;
+      background: var(--panel) !important;
+      color: var(--text) !important;
+      border-color: var(--border) !important;
+    }
+    .leaflet-control-zoom a:hover {
+      background: rgba(255,255,255,0.08) !important;
+    }
+
+    @media (max-width: 900px) {
+      :root {
+        --panel-w: min(84vw, 320px);
+        --footer-h: 84px;
+      }
+
+      .app {
+        grid-template-columns: 1fr;
+        grid-template-areas:
+          "header"
+          "map"
+          "timeline";
+      }
+
+      aside {
+        position: absolute;
+        top: var(--header-h);
+        left: 0;
+        bottom: var(--footer-h);
+        width: var(--panel-w);
+        box-shadow: 22px 0 36px rgba(0,0,0,0.3);
+      }
+
+      footer {
+        padding: 0 14px;
+      }
+
+      .header-meta {
+        gap: 6px;
+      }
+    }
+
+    @media (max-height: 860px) {
+      :root {
+        --header-h: 48px;
+        --footer-h: 72px;
+      }
+
+      .stat-block {
+        padding: 8px;
+        margin-bottom: 4px;
+      }
+
+      .stat-num {
+        font-size: 24px;
+      }
+
+      .chart-wrap {
+        height: 132px;
+        padding: 6px;
+      }
+
+      .detail-grid {
+        grid-template-columns: 1fr;
+        gap: 4px;
+      }
+
+      .detail-card {
+        padding: 6px;
+      }
+
+      .detail-val {
+        font-size: 10px;
+      }
+
+      .slider-help {
+        display: none;
+      }
+
+      .slider-row {
+        margin-bottom: 6px;
+      }
+
+      .toggle-row {
+        padding: 6px 8px;
+      }
+
+      .toggle-sub {
+        display: none;
+      }
+
+      .coords-block {
+        right: 10px;
+        bottom: 10px;
+        gap: 2px 8px;
+        font-size: 9px;
+      }
+
+      .header-reference {
+        padding: 4px 7px;
+        font-size: 10px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="app" id="app">
+    <header>
+      <button class="sidebar-toggle" id="btn-sidebar-toggle" aria-label="Toggle sidebar" aria-expanded="true" title="Collapse sidebar">
+        <svg viewBox="0 0 20 20">
+          <path d="M3 5.5h14M3 10h14M3 14.5h14"></path>
+        </svg>
+      </button>
+      <div class="logo-mark">L</div>
+      <div>
+        <div class="logo-text">Lake Monitor</div>
+        <div class="logo-sub">Original + Segmented Temporal Overlay</div>
+      </div>
+      <div class="sep"></div>
+      <div class="header-meta">
+        <div class="status-pill">
+          <div class="status-dot"></div>
+          <span id="header-status">READY</span>
+        </div>
+        <div class="header-reference">
+          <div class="header-reference-top">
+            <strong>SamGeo3</strong>
+            <span>Prompt: "Water"</span>
+          </div>
+          <div class="header-reference-bottom">
+            <span>conf: 0.4</span>
+            <a href="https://github.com/opengeos/segment-geospatial" target="_blank" rel="noopener noreferrer">segment-geospatial</a>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <aside>
+      <div class="sidebar-section">
+        <div class="section-label">Water Body</div>
+        <div class="lake-select-wrap">
+          <select id="lake-select"></select>
+          <svg class="select-chevron" width="12" height="12" viewBox="0 0 12 12" fill="none">
+            <path d="M2 4l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"></path>
+          </svg>
+        </div>
+      </div>
+
+      <div class="sidebar-section">
+        <div class="section-label">Surface Area</div>
+        <div class="stat-block">
+          <div class="stat-num" id="current-area">--</div>
+          <div class="stat-unit">km²</div>
+          <div class="stat-delta flat" id="area-delta">--</div>
+        </div>
+        <div class="chart-wrap">
+          <canvas id="sparkline"></canvas>
+        </div>
+      </div>
+
+      <div class="sidebar-section">
+        <div class="section-label">Frame Details</div>
+        <div class="detail-grid">
+          <div class="detail-card">
+            <div class="detail-key">Date</div>
+            <div class="detail-val" id="detail-date">--</div>
+          </div>
+          <div class="detail-card">
+            <div class="detail-key">Bounds</div>
+            <div class="detail-val" id="detail-bounds">--</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="sidebar-section">
+        <div class="section-label">Map Background</div>
+        <div class="toggle-row">
+          <div class="toggle-copy">
+            <div class="toggle-title">Leaflet Basemap</div>
+            <div class="toggle-sub">Turn off the background tiles completely to reduce resource usage.</div>
+          </div>
+          <label class="switch" for="basemap-toggle">
+            <input type="checkbox" id="basemap-toggle" checked>
+            <span class="switch-slider"></span>
+          </label>
+        </div>
+      </div>
+
+      <div class="sidebar-section">
+        <div class="section-label">Opacity Controls</div>
+        <div class="slider-help">Use these two sliders to independently adjust the original image opacity and the segmented overlay opacity.</div>
+        <div class="slider-row">
+          <div class="slider-label">
+            <span>Original Image</span>
+            <span class="slider-val" id="orig-opacity-val">100%</span>
+          </div>
+          <input type="range" id="original-opacity" min="0" max="1" step="0.05" value="1">
+        </div>
+        <div class="slider-row">
+          <div class="slider-label">
+            <span>Segmented Image</span>
+            <span class="slider-val" id="seg-opacity-val">100%</span>
+          </div>
+          <input type="range" id="segmented-opacity" min="0" max="1" step="0.05" value="0.78">
+        </div>
+      </div>
+
+    </aside>
+
+    <div id="map-container">
+      <div id="loading-bar-wrap"><div id="loading-bar"></div></div>
+      <div id="map"></div>
+      <div class="map-badge">
+        <div class="map-badge-date" id="badge-date">–</div>
+        <div class="map-badge-lake" id="badge-lake">–</div>
+      </div>
+      <div class="coords-block">
+        <span>LAT</span><span id="c-lat">–</span>
+        <span>LNG</span><span id="c-lng">–</span>
+        <span>ZOOM</span><span id="c-zoom">–</span>
+        <span>ENTRIES</span><span id="c-entries">–</span>
+      </div>
+      <div class="status-message" id="status-message"></div>
+    </div>
+
+    <footer>
+      <div class="playback-controls">
+        <button class="ctrl-btn" id="btn-prev" title="Previous frame">
+          <svg viewBox="0 0 14 14"><path d="M2 2h1.5v10H2V2zm9.5 1.2L5.2 7l6.3 3.8V3.2z"></path></svg>
+        </button>
+        <button class="ctrl-btn play-btn" id="btn-play" title="Play or pause">
+          <svg viewBox="0 0 14 14"><path id="play-icon" d="M4 2.5l8 4.5-8 4.5V2.5z"></path></svg>
+        </button>
+        <button class="ctrl-btn" id="btn-next" title="Next frame">
+          <svg viewBox="0 0 14 14"><path d="M10.5 2H12v10h-1.5V2zM2.5 3.2L8.8 7 2.5 10.8V3.2z"></path></svg>
+        </button>
+        <select class="speed-select" id="speed-select">
+          <option value="2000" selected>0.5×</option>
+          <option value="1000">1×</option>
+          <option value="500">2×</option>
+          <option value="250">4×</option>
+        </select>
+      </div>
+
+      <div class="timeline-wrap">
+        <div class="timeline-current-label" id="current-date-display">–</div>
+        <div class="timeline-track-row">
+          <div class="timeline-track-bg"></div>
+          <div class="timeline-track-fill" id="track-fill"></div>
+          <input type="range" id="timeline-slider" min="0" max="0" step="1" value="0">
+        </div>
+        <div class="timeline-labels">
+          <span id="tl-start">–</span>
+          <span id="tl-end">–</span>
+        </div>
+      </div>
+    </footer>
+  </div>
+
+  <script>
+    const IMAGE_CACHE_LIMIT = 12;
+    const PREFETCH_RADIUS = 1;
+    const MAX_CANVAS_DIMENSION = 2048;
+    const MAX_CANVAS_PIXELS = 2_600_000;
+    const PLAY_ICON = "M4 2.5l8 4.5-8 4.5V2.5z";
+    const PAUSE_ICON = "M3 2h3v10H3V2zm5 0h3v10H8V2z";
+
+    let lakeData = {};
+    let currentLake = "";
+    let currentIndex = 0;
+    let map;
+    let sparkline;
+    let basemapEnabled = true;
+    let activeBuffer = "A";
+    let playing = false;
+    let playTimer = null;
+    let sidebarCollapsed = false;
+    let loadingFrame = false;
+    let lastFrameKey = "";
+    let currentTrend = "flat";
+    let statusTimer = null;
+    let sliderDebounce = null;
+    let queuedNavigation = null;
+
+    const imageCache = new Map();
+    const pendingBitmaps = new Map();
+    const layers = {
+      A: { orig: null, seg: null },
+      B: { orig: null, seg: null }
+    };
+    const baseLayers = {
+      imagery: null,
+      labels: null
+    };
+
+    const $ = id => document.getElementById(id);
+    const lakeSelect = $("lake-select");
+    const timelineSlider = $("timeline-slider");
+    const dateDisplay = $("current-date-display");
+    const badgeDate = $("badge-date");
+    const badgeLake = $("badge-lake");
+    const areaDisplay = $("current-area");
+    const areaDelta = $("area-delta");
+    const detailDate = $("detail-date");
+    const detailBounds = $("detail-bounds");
+    const origOpacityInput = $("original-opacity");
+    const segOpacityInput = $("segmented-opacity");
+    const origOpacityVal = $("orig-opacity-val");
+    const segOpacityVal = $("seg-opacity-val");
+    const loadingBar = $("loading-bar");
+    const statusMessage = $("status-message");
+    const headerStatus = $("header-status");
+    const trackFill = $("track-fill");
+    const playIcon = $("play-icon");
+    const btnPlay = $("btn-play");
+    const btnPrev = $("btn-prev");
+    const btnNext = $("btn-next");
+    const speedSelect = $("speed-select");
+    const appShell = $("app");
+    const btnSidebarToggle = $("btn-sidebar-toggle");
+    const basemapToggle = $("basemap-toggle");
+
+    function titleCaseLakeName(name) {
+      return name
+        .split("-")
+        .filter(Boolean)
+        .map(part => part.charAt(0).toUpperCase() + part.slice(1))
+        .join(" ");
+    }
+
+    function setHeaderStatus(value) {
+      headerStatus.textContent = value;
+    }
+
+    function showStatus(message, type = "info", sticky = false) {
+      clearTimeout(statusTimer);
+      statusMessage.textContent = message;
+      statusMessage.className = "status-message visible" + (type === "error" ? " error" : "");
+      if (!sticky) {
+        statusTimer = setTimeout(() => {
+          statusMessage.classList.remove("visible");
+        }, 2600);
+      }
+    }
+
+    function setProgress(percent) {
+      loadingBar.style.width = percent + "%";
+    }
+
+    function clearProgress() {
+      setTimeout(() => {
+        loadingBar.style.width = "0%";
+      }, 220);
+    }
+
+    function evictImageCache() {
+      while (imageCache.size > IMAGE_CACHE_LIMIT) {
+        const oldestKey = imageCache.keys().next().value;
+        const oldest = imageCache.get(oldestKey);
+        if (oldest && typeof oldest.close === "function") oldest.close();
+        imageCache.delete(oldestKey);
+      }
+    }
+
+    async function fetchBitmap(url) {
+      if (imageCache.has(url)) {
+        const cached = imageCache.get(url);
+        imageCache.delete(url);
+        imageCache.set(url, cached);
+        return cached;
+      }
+
+      if (pendingBitmaps.has(url)) return pendingBitmaps.get(url);
+
+      const task = (async () => {
+        const response = await fetch(url, { cache: "force-cache" });
+        if (!response.ok) throw new Error("Failed to load " + url);
+        const blob = await response.blob();
+
+        let bitmap;
+        if ("createImageBitmap" in window) {
+          bitmap = await createImageBitmap(blob);
+        } else {
+          bitmap = await new Promise((resolve, reject) => {
+            const img = new Image();
+            img.onload = () => resolve(img);
+            img.onerror = () => reject(new Error("Failed to decode " + url));
+            img.decoding = "async";
+            img.src = URL.createObjectURL(blob);
+          });
+        }
+
+        imageCache.set(url, bitmap);
+        evictImageCache();
+        pendingBitmaps.delete(url);
+        return bitmap;
+      })().catch(error => {
+        pendingBitmaps.delete(url);
+        throw error;
+      });
+
+      pendingBitmaps.set(url, task);
+      return task;
+    }
+
+    function createTrendTint() {
+      return "rgba(0, 153, 255, 0.9)";
+    }
+
+    function createCanvasLayer(zIndex, { tintable = false } = {}) {
+      const CanvasLayer = L.Layer.extend({
+        initialize() {
+          this._bitmap = null;
+          this._bounds = null;
+          this._canvas = null;
+          this._ctx = null;
+          this._opacity = 0;
+          this._tintable = tintable;
+          this._tintColor = null;
+          this._rafId = 0;
+        },
+        onAdd(mapInstance) {
+          this._map = mapInstance;
+          this._canvas = L.DomUtil.create("canvas", "leaflet-zoom-hide");
+          this._canvas.style.position = "absolute";
+          this._canvas.style.pointerEvents = "none";
+          this._canvas.style.zIndex = String(zIndex);
+          this._canvas.style.opacity = String(this._opacity);
+          this._ctx = this._canvas.getContext("2d", { alpha: true, desynchronized: true });
+          mapInstance.getPanes().overlayPane.appendChild(this._canvas);
+          mapInstance.on("moveend zoomend resize viewreset", this._scheduleUpdate, this);
+          this._scheduleUpdate();
+        },
+        onRemove(mapInstance) {
+          mapInstance.off("moveend zoomend resize viewreset", this._scheduleUpdate, this);
+          if (this._rafId) {
+            cancelAnimationFrame(this._rafId);
+            this._rafId = 0;
+          }
+          if (this._canvas && this._canvas.parentNode) {
+            this._canvas.parentNode.removeChild(this._canvas);
+          }
+        },
+        setData(bitmap, bounds) {
+          this._bitmap = bitmap;
+          this._bounds = bounds;
+          this._scheduleUpdate();
+          return this;
+        },
+        setOpacity(value) {
+          this._opacity = value;
+          if (this._canvas) this._canvas.style.opacity = String(value);
+          return this;
+        },
+        setTint(color) {
+          this._tintColor = color;
+          if (this._bitmap) this._scheduleUpdate();
+          return this;
+        },
+        getOpacity() {
+          return this._opacity;
+        },
+        _scheduleUpdate() {
+          if (this._rafId) cancelAnimationFrame(this._rafId);
+          this._rafId = requestAnimationFrame(() => {
+            this._rafId = 0;
+            this._update();
+          });
+        },
+        _update() {
+          if (!this._map || !this._canvas || !this._bitmap || !this._bounds) return;
+
+          const topLeft = this._map.latLngToLayerPoint(this._bounds.getNorthWest());
+          const bottomRight = this._map.latLngToLayerPoint(this._bounds.getSouthEast());
+          const width = Math.max(1, bottomRight.x - topLeft.x);
+          const height = Math.max(1, bottomRight.y - topLeft.y);
+          const dpr = Math.min(window.devicePixelRatio || 1, 1);
+
+          const rawPixelWidth = Math.max(1, Math.round(width * dpr));
+          const rawPixelHeight = Math.max(1, Math.round(height * dpr));
+          const dimensionScale = Math.min(
+            1,
+            MAX_CANVAS_DIMENSION / rawPixelWidth,
+            MAX_CANVAS_DIMENSION / rawPixelHeight
+          );
+          const pixelScale = Math.min(
+            1,
+            Math.sqrt(MAX_CANVAS_PIXELS / (rawPixelWidth * rawPixelHeight))
+          );
+          const renderScale = Math.min(dimensionScale, pixelScale);
+          const canvasPixelWidth = Math.max(1, Math.round(rawPixelWidth * renderScale));
+          const canvasPixelHeight = Math.max(1, Math.round(rawPixelHeight * renderScale));
+          const drawWidth = canvasPixelWidth / dpr;
+          const drawHeight = canvasPixelHeight / dpr;
+
+          this._canvas.style.left = topLeft.x + "px";
+          this._canvas.style.top = topLeft.y + "px";
+          this._canvas.style.width = width + "px";
+          this._canvas.style.height = height + "px";
+          this._canvas.width = canvasPixelWidth;
+          this._canvas.height = canvasPixelHeight;
+
+          this._ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+          this._ctx.clearRect(0, 0, drawWidth, drawHeight);
+          this._ctx.imageSmoothingEnabled = true;
+          this._ctx.drawImage(this._bitmap, 0, 0, drawWidth, drawHeight);
+          if (this._tintable && this._tintColor) {
+            this._ctx.save();
+            this._ctx.globalCompositeOperation = "source-atop";
+            this._ctx.fillStyle = this._tintColor;
+            this._ctx.fillRect(0, 0, drawWidth, drawHeight);
+            this._ctx.restore();
+          }
+        }
+      });
+
+      return new CanvasLayer();
+    }
+
+    function animateOpacity(layer, key, target, duration = 110) {
+      if (!layer) return;
+      if (!animateOpacity.rafMap) animateOpacity.rafMap = new Map();
+      if (animateOpacity.rafMap.has(key)) cancelAnimationFrame(animateOpacity.rafMap.get(key));
+
+      const start = layer.getOpacity();
+      const diff = target - start;
+      if (Math.abs(diff) < 0.01) {
+        layer.setOpacity(target);
+        return;
+      }
+
+      const startTime = performance.now();
+      const step = now => {
+        const progress = Math.min((now - startTime) / duration, 1);
+        const eased = progress < 0.5 ? 2 * progress * progress : 1 - Math.pow(-2 * progress + 2, 2) / 2;
+        layer.setOpacity(start + diff * eased);
+        if (progress < 1) {
+          animateOpacity.rafMap.set(key, requestAnimationFrame(step));
+        } else {
+          animateOpacity.rafMap.delete(key);
+        }
+      };
+
+      animateOpacity.rafMap.set(key, requestAnimationFrame(step));
+    }
+
+    function updateBasemapState() {
+      if (!map) return;
+
+      if (basemapEnabled) {
+        if (baseLayers.imagery && !map.hasLayer(baseLayers.imagery)) baseLayers.imagery.addTo(map);
+        if (baseLayers.labels && !map.hasLayer(baseLayers.labels)) baseLayers.labels.addTo(map);
+        showStatus("Background basemap enabled.");
+      } else {
+        if (baseLayers.imagery && map.hasLayer(baseLayers.imagery)) map.removeLayer(baseLayers.imagery);
+        if (baseLayers.labels && map.hasLayer(baseLayers.labels)) map.removeLayer(baseLayers.labels);
+        showStatus("Background basemap disabled to save resources.");
+      }
+    }
+
+    function initMap() {
+      map = L.map("map", {
+        zoomControl: true,
+        attributionControl: false,
+        preferCanvas: true,
+        zoomAnimation: false,
+        fadeAnimation: false,
+        markerZoomAnimation: false,
+        zoomSnap: 1,
+        zoomDelta: 1,
+        wheelPxPerZoomLevel: 160,
+        wheelDebounceTime: 80
+      }).setView([12.97, 77.59], 13);
+
+      map.on("zoomend", () => {
+        $("c-zoom").textContent = map.getZoom().toFixed(1);
+      });
+
+      map.on("mousemove", event => {
+        $("c-lat").textContent = event.latlng.lat.toFixed(5);
+        $("c-lng").textContent = event.latlng.lng.toFixed(5);
+      });
+
+      baseLayers.imagery = L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}", {
+        maxZoom: 19,
+        keepBuffer: 6,
+        updateWhenZooming: false,
+        updateWhenIdle: false
+      });
+
+      baseLayers.labels = L.tileLayer("https://{s}.basemaps.cartocdn.com/light_only_labels/{z}/{x}/{y}{r}.png", {
+        opacity: 0.58,
+        keepBuffer: 6,
+        updateWhenZooming: false,
+        updateWhenIdle: false
+      });
+
+      updateBasemapState();
+    }
+
+    function initLayers() {
+      ["A", "B"].forEach((buffer, index) => {
+        layers[buffer].orig = createCanvasLayer(10 + index * 2).addTo(map);
+        layers[buffer].seg = createCanvasLayer(11 + index * 2, { tintable: true }).addTo(map);
+        layers[buffer].orig.setOpacity(0);
+        layers[buffer].seg.setOpacity(0);
+      });
+    }
+
+    function normalizeLakeData(raw) {
+      const normalized = {};
+
+      Object.entries(raw || {}).forEach(([lakeName, entries]) => {
+        const validEntries = (Array.isArray(entries) ? entries : [])
+          .map(entry => {
+            const original = entry.original_img || entry.original || entry.originalImage || "";
+            const segmented = entry.segmented_img || entry.segmented || entry.segmentedImage || "";
+            const bounds = entry.bounds;
+            if (!entry.date || !original || !segmented || !Array.isArray(bounds) || bounds.length !== 2) return null;
+            return {
+              date: entry.date,
+              area_km2: Number(entry.area_km2 || 0),
+              original_img: original,
+              segmented_img: segmented,
+              bounds
+            };
+          })
+          .filter(Boolean)
+          .sort((a, b) => a.date.localeCompare(b.date));
+
+        if (validEntries.length) normalized[lakeName] = validEntries;
+      });
+
+      return normalized;
+    }
+
+    function updateTrackFill(index, max) {
+      const pct = max > 0 ? (index / max) * 100 : 0;
+      trackFill.style.width = pct + "%";
+    }
+
+    function setDateLabels(date) {
+      dateDisplay.textContent = date || "–";
+      badgeDate.textContent = date || "–";
+      detailDate.textContent = date || "–";
+    }
+
+    function updateAreaStats(entries, index) {
+      const entry = entries[index];
+      areaDisplay.className = "stat-num";
+      areaDelta.className = "stat-delta";
+      areaDisplay.textContent = Number(entry.area_km2).toFixed(4);
+
+      if (index === 0 || !entries[index - 1]) {
+        areaDelta.classList.add("flat");
+        areaDelta.textContent = "–";
+        currentTrend = "flat";
+        return;
+      }
+
+      const previous = Number(entries[index - 1].area_km2);
+      const current = Number(entry.area_km2);
+      const delta = current - previous;
+      const pct = previous === 0 ? 0 : (delta / previous) * 100;
+
+      if (delta > 1e-8) {
+        areaDisplay.classList.add("up");
+        areaDelta.classList.add("up");
+        areaDelta.textContent = "+" + pct.toFixed(2) + "%";
+        currentTrend = "up";
+      } else if (delta < -1e-8) {
+        areaDisplay.classList.add("down");
+        areaDelta.classList.add("down");
+        areaDelta.textContent = pct.toFixed(2) + "%";
+        currentTrend = "down";
+      } else {
+        areaDelta.classList.add("flat");
+        areaDelta.textContent = "0.00%";
+        currentTrend = "flat";
+      }
+    }
+
+    function formatBounds(bounds) {
+      if (!Array.isArray(bounds) || bounds.length !== 2) return "–";
+      const sw = bounds[0];
+      const ne = bounds[1];
+      return [
+        "SW " + Number(sw[0]).toFixed(5) + ", " + Number(sw[1]).toFixed(5),
+        "NE " + Number(ne[0]).toFixed(5) + ", " + Number(ne[1]).toFixed(5)
+      ].join(" | ");
+    }
+
+    function updateSummaryUI(entries, index) {
+      const entry = entries[index];
+      setDateLabels(entry.date);
+      badgeLake.textContent = titleCaseLakeName(currentLake);
+      detailBounds.textContent = formatBounds(entry.bounds);
+      $("c-entries").textContent = String(entries.length);
+      $("c-zoom").textContent = map.getZoom().toFixed(1);
+      timelineSlider.max = Math.max(entries.length - 1, 0);
+      timelineSlider.value = String(index);
+      $("tl-start").textContent = entries[0].date.slice(0, 4);
+      $("tl-end").textContent = entries[entries.length - 1].date.slice(0, 4);
+      updateTrackFill(index, entries.length - 1);
+      updateAreaStats(entries, index);
+    }
+
+    function initSparkline(entries) {
+      const ctx = $("sparkline").getContext("2d");
+      if (sparkline) sparkline.destroy();
+
+      const values = entries.map(entry => Number(entry.area_km2));
+      const minValue = Math.min(...values);
+      const maxValue = Math.max(...values);
+
+      sparkline = new Chart(ctx, {
+        type: "line",
+        data: {
+          labels: entries.map(entry => entry.date),
+          datasets: [{
+            data: values,
+            borderColor: "#00d4ff",
+            backgroundColor(context) {
+              const gradient = context.chart.ctx.createLinearGradient(0, 0, 0, 150);
+              gradient.addColorStop(0, "rgba(0,212,255,0.28)");
+              gradient.addColorStop(1, "rgba(0,212,255,0)");
+              return gradient;
+            },
+            borderWidth: 1.5,
+            pointRadius: context => context.dataIndex === currentIndex ? 4 : 0,
+            pointHoverRadius: 4,
+            pointBackgroundColor: "#00ff9d",
+            pointBorderColor: "#080c10",
+            pointBorderWidth: 2,
+            fill: true,
+            tension: 0.35
+          }]
+        },
+        options: {
+          animation: false,
+          responsive: true,
+          maintainAspectRatio: false,
+          interaction: { mode: "index", intersect: false },
+          onClick(_event, elements) {
+            if (!elements || !elements.length) return;
+            const pointIndex = elements[0].index;
+            stopPlay();
+            goTo(pointIndex, false);
+          },
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              backgroundColor: "rgba(13,17,23,0.95)",
+              borderColor: "rgba(0,212,255,0.25)",
+              borderWidth: 1,
+              titleColor: "#00d4ff",
+              bodyColor: "#e8edf2",
+              titleFont: { family: "DM Mono", size: 10 },
+              bodyFont: { family: "DM Mono", size: 11 },
+              displayColors: false,
+              callbacks: {
+                title(items) { return entries[items[0].dataIndex].date; },
+                label(item) { return item.parsed.y.toFixed(4) + " km²"; }
+              }
+            }
+          },
+          scales: {
+            x: { display: false },
+            y: {
+              ticks: {
+                color: "#41515f",
+                font: { family: "DM Mono", size: 9 },
+                callback(value) { return Number(value).toFixed(1); },
+                maxTicksLimit: 4
+              },
+              grid: {
+                color: "rgba(255,255,255,0.05)",
+                drawBorder: false
+              },
+              min: minValue * 0.97,
+              max: maxValue * 1.03
+            }
+          }
+        }
+      });
+    }
+
+    function updateSparklineMarker() {
+      if (!sparkline) return;
+      sparkline.data.datasets[0].pointRadius = context => context.dataIndex === currentIndex ? 4 : 0;
+      sparkline.update("none");
+    }
+
+    function prefetchNearby() {
+      const entries = lakeData[currentLake];
+      if (!entries || !entries.length) return;
+
+      for (let offset = -PREFETCH_RADIUS; offset <= PREFETCH_RADIUS; offset += 1) {
+        const nextIndex = currentIndex + offset;
+        if (nextIndex < 0 || nextIndex >= entries.length) continue;
+        const entry = entries[nextIndex];
+        fetchBitmap(entry.original_img).catch(() => {});
+        fetchBitmap(entry.segmented_img).catch(() => {});
+      }
+    }
+
+    async function renderFrame(entry, fitBounds) {
+      const frameKey = entry.original_img + "|" + entry.segmented_img;
+      if (!fitBounds && frameKey === lastFrameKey && !loadingFrame) return;
+      if (loadingFrame) return;
+
+      loadingFrame = true;
+      setHeaderStatus("LOADING");
+      setProgress(20);
+
+      try {
+        const [originalBitmap, segmentedBitmap] = await Promise.all([
+          fetchBitmap(entry.original_img),
+          fetchBitmap(entry.segmented_img)
+        ]);
+
+        setProgress(82);
+
+        const nextBuffer = activeBuffer === "A" ? "B" : "A";
+        const bounds = L.latLngBounds(entry.bounds[0], entry.bounds[1]);
+        const tintColor = createTrendTint();
+
+        layers[nextBuffer].orig.setData(originalBitmap, bounds);
+        layers[nextBuffer].seg.setTint(tintColor).setData(segmentedBitmap, bounds);
+
+        animateOpacity(layers[activeBuffer].orig, "orig-out", 0);
+        animateOpacity(layers[activeBuffer].seg, "seg-out", 0);
+        animateOpacity(layers[nextBuffer].orig, "orig-in", Number(origOpacityInput.value));
+        animateOpacity(layers[nextBuffer].seg, "seg-in", Number(segOpacityInput.value));
+
+        activeBuffer = nextBuffer;
+
+        if (fitBounds) {
+          map.fitBounds(bounds, { padding: [48, 48] });
+        }
+
+        lastFrameKey = frameKey;
+        setProgress(100);
+        clearProgress();
+        setHeaderStatus("READY");
+        prefetchNearby();
+      } catch (error) {
+        console.error(error);
+        setHeaderStatus("ERROR");
+        clearProgress();
+        showStatus("Could not load one or more frame images. Check the paths in lake_data.json.", "error", true);
+      } finally {
+        loadingFrame = false;
+        if (queuedNavigation) {
+          const nextNav = queuedNavigation;
+          queuedNavigation = null;
+          goTo(nextNav.index, nextNav.fitBounds);
+        }
+      }
+    }
+
+    async function goTo(index, fitBounds = false) {
+      const entries = lakeData[currentLake];
+      if (!entries || !entries.length) return;
+
+      const normalizedIndex = ((index % entries.length) + entries.length) % entries.length;
+      currentIndex = normalizedIndex;
+      updateSummaryUI(entries, currentIndex);
+      updateSparklineMarker();
+      if (loadingFrame) {
+        queuedNavigation = { index: normalizedIndex, fitBounds };
+        return;
+      }
+      await renderFrame(entries[currentIndex], fitBounds);
+    }
+
+    function stopPlay() {
+      playing = false;
+      playIcon.setAttribute("d", PLAY_ICON);
+      clearInterval(playTimer);
+      playTimer = null;
+    }
+
+    function startPlay() {
+      if (playing) return;
+      playing = true;
+      playIcon.setAttribute("d", PAUSE_ICON);
+      clearInterval(playTimer);
+      playTimer = setInterval(() => {
+        goTo(currentIndex + 1, false);
+      }, Number(speedSelect.value));
+    }
+
+    function togglePlay() {
+      if (playing) stopPlay();
+      else startPlay();
+    }
+
+    function syncSidebarUI() {
+      appShell.classList.toggle("sidebar-collapsed", sidebarCollapsed);
+      btnSidebarToggle.setAttribute("aria-expanded", String(!sidebarCollapsed));
+      btnSidebarToggle.setAttribute("title", sidebarCollapsed ? "Expand sidebar" : "Collapse sidebar");
+      requestAnimationFrame(() => {
+        if (map) map.invalidateSize();
+      });
+    }
+
+    function handleLakeChange(nextLake) {
+      currentLake = nextLake;
+      currentIndex = 0;
+      stopPlay();
+      initSparkline(lakeData[currentLake]);
+      goTo(0, true);
+    }
+
+    function initEvents() {
+      lakeSelect.addEventListener("change", event => {
+        handleLakeChange(event.target.value);
+      });
+
+      timelineSlider.addEventListener("input", event => {
+        const index = Number(event.target.value);
+        const entries = lakeData[currentLake];
+        if (!entries || !entries[index]) return;
+
+        setDateLabels(entries[index].date);
+        updateTrackFill(index, Math.max(entries.length - 1, 0));
+
+        clearTimeout(sliderDebounce);
+        sliderDebounce = setTimeout(() => {
+          goTo(index, false);
+        }, 24);
+      });
+
+      timelineSlider.addEventListener("change", event => {
+        clearTimeout(sliderDebounce);
+        goTo(Number(event.target.value), false);
+      });
+
+      origOpacityInput.addEventListener("input", () => {
+        const value = Number(origOpacityInput.value);
+        origOpacityVal.textContent = Math.round(value * 100) + "%";
+        layers[activeBuffer].orig.setOpacity(value);
+      });
+
+      segOpacityInput.addEventListener("input", () => {
+        const value = Number(segOpacityInput.value);
+        segOpacityVal.textContent = Math.round(value * 100) + "%";
+        layers[activeBuffer].seg.setOpacity(value);
+      });
+
+      btnPlay.addEventListener("click", togglePlay);
+      btnPrev.addEventListener("click", () => {
+        stopPlay();
+        goTo(currentIndex - 1, false);
+      });
+      btnNext.addEventListener("click", () => {
+        stopPlay();
+        goTo(currentIndex + 1, false);
+      });
+
+      speedSelect.addEventListener("change", () => {
+        if (playing) {
+          stopPlay();
+          startPlay();
+        }
+      });
+
+      btnSidebarToggle.addEventListener("click", () => {
+        sidebarCollapsed = !sidebarCollapsed;
+        syncSidebarUI();
+      });
+
+      basemapToggle.addEventListener("change", () => {
+        basemapEnabled = basemapToggle.checked;
+        updateBasemapState();
+      });
+
+      document.addEventListener("keydown", event => {
+        if (event.target.tagName === "INPUT" || event.target.tagName === "SELECT") return;
+        if (event.key === "ArrowRight") {
+          stopPlay();
+          goTo(currentIndex + 1, false);
+        } else if (event.key === "ArrowLeft") {
+          stopPlay();
+          goTo(currentIndex - 1, false);
+        } else if (event.key === " ") {
+          event.preventDefault();
+          togglePlay();
+        }
+      });
+    }
+
+    async function init() {
+      try {
+        setHeaderStatus("BOOTING");
+        showStatus("Loading lake data...");
+
+        const response = await fetch("lake_data.json", { cache: "no-cache" });
+        if (!response.ok) throw new Error("Could not load lake_data.json");
+
+        lakeData = normalizeLakeData(await response.json());
+        const lakes = Object.keys(lakeData).sort();
+
+        if (!lakes.length) {
+          throw new Error("No valid lake entries were found in lake_data.json");
+        }
+
+        lakes.forEach(lakeName => {
+          const option = document.createElement("option");
+          option.value = lakeName;
+          option.textContent = titleCaseLakeName(lakeName);
+          lakeSelect.appendChild(option);
+        });
+
+        currentLake = lakes[0];
+        lakeSelect.value = currentLake;
+
+        initMap();
+        initLayers();
+        initEvents();
+        syncSidebarUI();
+        basemapToggle.checked = basemapEnabled;
+        initSparkline(lakeData[currentLake]);
+        origOpacityVal.textContent = Math.round(Number(origOpacityInput.value) * 100) + "%";
+        segOpacityVal.textContent = Math.round(Number(segOpacityInput.value) * 100) + "%";
+
+        await goTo(0, true);
+        showStatus("Loaded " + Object.keys(lakeData).length + " lake dataset(s).");
+      } catch (error) {
+        console.error("Init error:", error);
+        setHeaderStatus("ERROR");
+        showStatus(error.message || "Failed to initialize viewer.", "error", true);
+      }
+    }
+
+    window.addEventListener("load", init);
+  </script>
+</body>
+</html>

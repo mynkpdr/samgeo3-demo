@@ -1,0 +1,1012 @@
+{
+  "bellandur-lake": [
+    {
+      "date": "2011-03-30",
+      "area_km2": 1.4697,
+      "original_img": "previews/compressed/bellandur-lake-2011-03-30.webp",
+      "segmented_img": "previews/segmented/bellandur-lake-2011-03-30.png",
+      "bounds": [
+        [
+          12.9237288346904,
+          77.63703003779098
+        ],
+        [
+          12.949054252209015,
+          77.68204823389694
+        ]
+      ]
+    },
+    {
+      "date": "2011-05-30",
+      "area_km2": 1.4685,
+      "original_img": "previews/compressed/bellandur-lake-2011-05-30.webp",
+      "segmented_img": "previews/segmented/bellandur-lake-2011-05-30.png",
+      "bounds": [
+        [
+          12.9237288346904,
+          77.63703003779098
+        ],
+        [
+          12.949054252209015,
+          77.68204823389694
+        ]
+      ]
+    },
+    {
+      "date": "2012-05-31",
+      "area_km2": 1.5399,
+      "original_img": "previews/compressed/bellandur-lake-2012-05-31.webp",
+      "segmented_img": "previews/segmented/bellandur-lake-2012-05-31.png",
+      "bounds": [
+        [
+          12.9237288346904,
+          77.63703003779098
+        ],
+        [
+          12.949054252209015,
+          77.68204823389694
+        ]
+      ]
+    },
+    {
+      "date": "2012-10-30",
+      "area_km2": 1.8211,
+      "original_img": "previews/compressed/bellandur-lake-2012-10-30.webp",
+      "segmented_img": "previews/segmented/bellandur-lake-2012-10-30.png",
+      "bounds": [
+        [
+          12.9237288346904,
+          77.63703003779098
+        ],
+        [
+          12.949054252209015,
+          77.68204823389694
+        ]
+      ]
+    },
+    {
+      "date": "2012-11-30",
+      "area_km2": 1.4733,
+      "original_img": "previews/compressed/bellandur-lake-2012-11-30.webp",
+      "segmented_img": "previews/segmented/bellandur-lake-2012-11-30.png",
+      "bounds": [
+        [
+          12.9237288346904,
+          77.63703003779098
+        ],
+        [
+          12.949054252209015,
+          77.68204823389694
+        ]
+      ]
+    },
+    {
+      "date": "2013-01-30",
+      "area_km2": 1.5242,
+      "original_img": "previews/compressed/bellandur-lake-2013-01-30.webp",
+      "segmented_img": "previews/segmented/bellandur-lake-2013-01-30.png",
+      "bounds": [
+        [
+          12.9237288346904,
+          77.63703003779098
+        ],
+        [
+          12.949054252209015,
+          77.68204823389694
+        ]
+      ]
+    },
+    {
+      "date": "2013-11-30",
+      "area_km2": 1.5564,
+      "original_img": "previews/compressed/bellandur-lake-2013-11-30.webp",
+      "segmented_img": "previews/segmented/bellandur-lake-2013-11-30.png",
+      "bounds": [
+        [
+          12.9237288346904,
+          77.63703003779098
+        ],
+        [
+          12.949054252209015,
+          77.68204823389694
+        ]
+      ]
+    },
+    {
+      "date": "2014-01-30",
+      "area_km2": 1.3414,
+      "original_img": "previews/compressed/bellandur-lake-2014-01-30.webp",
+      "segmented_img": "previews/segmented/bellandur-lake-2014-01-30.png",
+      "bounds": [
+        [
+          12.9237288346904,
+          77.63703003779098
+        ],
+        [
+          12.949054252209015,
+          77.68204823389694
+        ]
+      ]
+    },
+    {
+      "date": "2014-02-28",
+      "area_km2": 1.2153,
+      "original_img": "previews/compressed/bellandur-lake-2014-02-28.webp",
+      "segmented_img": "previews/segmented/bellandur-lake-2014-02-28.png",
+      "bounds": [
+        [
+          12.9237288346904,
+          77.63703003779098
+        ],
+        [
+          12.949054252209015,
+          77.68204823389694
+        ]
+      ]
+    },
+    {
+      "date": "2014-03-30",
+      "area_km2": 1.2858,
+      "original_img": "previews/compressed/bellandur-lake-2014-03-30.webp",
+      "segmented_img": "previews/segmented/bellandur-lake-2014-03-30.png",
+      "bounds": [
+        [
+          12.9237288346904,
+          77.63703003779098
+        ],
+        [
+          12.949054252209015,
+          77.68204823389694
+        ]
+      ]
+    },
+    {
+      "date": "2014-04-30",
+      "area_km2": 1.1901,
+      "original_img": "previews/compressed/bellandur-lake-2014-04-30.webp",
+      "segmented_img": "previews/segmented/bellandur-lake-2014-04-30.png",
+      "bounds": [
+        [
+          12.9237288346904,
+          77.63703003779098
+        ],
+        [
+          12.949054252209015,
+          77.68204823389694
+        ]
+      ]
+    },
+    {
+      "date": "2014-05-30",
+      "area_km2": 1.0568,
+      "original_img": "previews/compressed/bellandur-lake-2014-05-30.webp",
+      "segmented_img": "previews/segmented/bellandur-lake-2014-05-30.png",
+      "bounds": [
+        [
+          12.9237288346904,
+          77.63703003779098
+        ],
+        [
+          12.949054252209015,
+          77.68204823389694
+        ]
+      ]
+    },
+    {
+      "date": "2014-09-30",
+      "area_km2": 1.4277,
+      "original_img": "previews/compressed/bellandur-lake-2014-09-30.webp",
+      "segmented_img": "previews/segmented/bellandur-lake-2014-09-30.png",
+      "bounds": [
+        [
+          12.9237288346904,
+          77.63703003779098
+        ],
+        [
+          12.949054252209015,
+          77.68204823389694
+        ]
+      ]
+    },
+    {
+      "date": "2014-11-30",
+      "area_km2": 1.4106,
+      "original_img": "previews/compressed/bellandur-lake-2014-11-30.webp",
+      "segmented_img": "previews/segmented/bellandur-lake-2014-11-30.png",
+      "bounds": [
+        [
+          12.9237288346904,
+          77.63703003779098
+        ],
+        [
+          12.949054252209015,
+          77.68204823389694
+        ]
+      ]
+    },
+    {
+      "date": "2014-12-30",
+      "area_km2": 1.329,
+      "original_img": "previews/compressed/bellandur-lake-2014-12-30.webp",
+      "segmented_img": "previews/segmented/bellandur-lake-2014-12-30.png",
+      "bounds": [
+        [
+          12.9237288346904,
+          77.63703003779098
+        ],
+        [
+          12.949054252209015,
+          77.68204823389694
+        ]
+      ]
+    },
+    {
+      "date": "2014-12-31",
+      "area_km2": 1.2185,
+      "original_img": "previews/compressed/bellandur-lake-2014-12-31.webp",
+      "segmented_img": "previews/segmented/bellandur-lake-2014-12-31.png",
+      "bounds": [
+        [
+          12.9237288346904,
+          77.63703003779098
+        ],
+        [
+          12.949054252209015,
+          77.68204823389694
+        ]
+      ]
+    },
+    {
+      "date": "2015-01-30",
+      "area_km2": 1.0987,
+      "original_img": "previews/compressed/bellandur-lake-2015-01-30.webp",
+      "segmented_img": "previews/segmented/bellandur-lake-2015-01-30.png",
+      "bounds": [
+        [
+          12.9237288346904,
+          77.63703003779098
+        ],
+        [
+          12.949054252209015,
+          77.68204823389694
+        ]
+      ]
+    },
+    {
+      "date": "2015-02-28",
+      "area_km2": 0.9897,
+      "original_img": "previews/compressed/bellandur-lake-2015-02-28.webp",
+      "segmented_img": "previews/segmented/bellandur-lake-2015-02-28.png",
+      "bounds": [
+        [
+          12.9237288346904,
+          77.63703003779098
+        ],
+        [
+          12.949054252209015,
+          77.68204823389694
+        ]
+      ]
+    },
+    {
+      "date": "2015-03-30",
+      "area_km2": 1.0746,
+      "original_img": "previews/compressed/bellandur-lake-2015-03-30.webp",
+      "segmented_img": "previews/segmented/bellandur-lake-2015-03-30.png",
+      "bounds": [
+        [
+          12.9237288346904,
+          77.63703003779098
+        ],
+        [
+          12.949054252209015,
+          77.68204823389694
+        ]
+      ]
+    },
+    {
+      "date": "2015-04-30",
+      "area_km2": 0.9494,
+      "original_img": "previews/compressed/bellandur-lake-2015-04-30.webp",
+      "segmented_img": "previews/segmented/bellandur-lake-2015-04-30.png",
+      "bounds": [
+        [
+          12.9237288346904,
+          77.63703003779098
+        ],
+        [
+          12.949054252209015,
+          77.68204823389694
+        ]
+      ]
+    },
+    {
+      "date": "2015-05-30",
+      "area_km2": 1.0537,
+      "original_img": "previews/compressed/bellandur-lake-2015-05-30.webp",
+      "segmented_img": "previews/segmented/bellandur-lake-2015-05-30.png",
+      "bounds": [
+        [
+          12.9237288346904,
+          77.63703003779098
+        ],
+        [
+          12.949054252209015,
+          77.68204823389694
+        ]
+      ]
+    },
+    {
+      "date": "2015-09-30",
+      "area_km2": 1.2804,
+      "original_img": "previews/compressed/bellandur-lake-2015-09-30.webp",
+      "segmented_img": "previews/segmented/bellandur-lake-2015-09-30.png",
+      "bounds": [
+        [
+          12.9237288346904,
+          77.63703003779098
+        ],
+        [
+          12.949054252209015,
+          77.68204823389694
+        ]
+      ]
+    },
+    {
+      "date": "2015-10-30",
+      "area_km2": 1.3019,
+      "original_img": "previews/compressed/bellandur-lake-2015-10-30.webp",
+      "segmented_img": "previews/segmented/bellandur-lake-2015-10-30.png",
+      "bounds": [
+        [
+          12.9237288346904,
+          77.63703003779098
+        ],
+        [
+          12.949054252209015,
+          77.68204823389694
+        ]
+      ]
+    },
+    {
+      "date": "2015-11-30",
+      "area_km2": 1.407,
+      "original_img": "previews/compressed/bellandur-lake-2015-11-30.webp",
+      "segmented_img": "previews/segmented/bellandur-lake-2015-11-30.png",
+      "bounds": [
+        [
+          12.9237288346904,
+          77.63703003779098
+        ],
+        [
+          12.949054252209015,
+          77.68204823389694
+        ]
+      ]
+    },
+    {
+      "date": "2016-01-30",
+      "area_km2": 1.2918,
+      "original_img": "previews/compressed/bellandur-lake-2016-01-30.webp",
+      "segmented_img": "previews/segmented/bellandur-lake-2016-01-30.png",
+      "bounds": [
+        [
+          12.9237288346904,
+          77.63703003779098
+        ],
+        [
+          12.949054252209015,
+          77.68204823389694
+        ]
+      ]
+    },
+    {
+      "date": "2016-01-31",
+      "area_km2": 1.1193,
+      "original_img": "previews/compressed/bellandur-lake-2016-01-31.webp",
+      "segmented_img": "previews/segmented/bellandur-lake-2016-01-31.png",
+      "bounds": [
+        [
+          12.9237288346904,
+          77.63703003779098
+        ],
+        [
+          12.949054252209015,
+          77.68204823389694
+        ]
+      ]
+    },
+    {
+      "date": "2016-02-29",
+      "area_km2": 1.1659,
+      "original_img": "previews/compressed/bellandur-lake-2016-02-29.webp",
+      "segmented_img": "previews/segmented/bellandur-lake-2016-02-29.png",
+      "bounds": [
+        [
+          12.9237288346904,
+          77.63703003779098
+        ],
+        [
+          12.949054252209015,
+          77.68204823389694
+        ]
+      ]
+    },
+    {
+      "date": "2016-03-30",
+      "area_km2": 1.2106,
+      "original_img": "previews/compressed/bellandur-lake-2016-03-30.webp",
+      "segmented_img": "previews/segmented/bellandur-lake-2016-03-30.png",
+      "bounds": [
+        [
+          12.9237288346904,
+          77.63703003779098
+        ],
+        [
+          12.949054252209015,
+          77.68204823389694
+        ]
+      ]
+    },
+    {
+      "date": "2016-03-31",
+      "area_km2": 1.0246,
+      "original_img": "previews/compressed/bellandur-lake-2016-03-31.webp",
+      "segmented_img": "previews/segmented/bellandur-lake-2016-03-31.png",
+      "bounds": [
+        [
+          12.9237288346904,
+          77.63703003779098
+        ],
+        [
+          12.949054252209015,
+          77.68204823389694
+        ]
+      ]
+    },
+    {
+      "date": "2016-05-30",
+      "area_km2": 1.1678,
+      "original_img": "previews/compressed/bellandur-lake-2016-05-30.webp",
+      "segmented_img": "previews/segmented/bellandur-lake-2016-05-30.png",
+      "bounds": [
+        [
+          12.9237288346904,
+          77.63703003779098
+        ],
+        [
+          12.949054252209015,
+          77.68204823389694
+        ]
+      ]
+    },
+    {
+      "date": "2016-11-30",
+      "area_km2": 1.2027,
+      "original_img": "previews/compressed/bellandur-lake-2016-11-30.webp",
+      "segmented_img": "previews/segmented/bellandur-lake-2016-11-30.png",
+      "bounds": [
+        [
+          12.9237288346904,
+          77.63703003779098
+        ],
+        [
+          12.949054252209015,
+          77.68204823389694
+        ]
+      ]
+    },
+    {
+      "date": "2016-12-30",
+      "area_km2": 1.1786,
+      "original_img": "previews/compressed/bellandur-lake-2016-12-30.webp",
+      "segmented_img": "previews/segmented/bellandur-lake-2016-12-30.png",
+      "bounds": [
+        [
+          12.9237288346904,
+          77.63703003779098
+        ],
+        [
+          12.949054252209015,
+          77.68204823389694
+        ]
+      ]
+    },
+    {
+      "date": "2017-01-30",
+      "area_km2": 1.0633,
+      "original_img": "previews/compressed/bellandur-lake-2017-01-30.webp",
+      "segmented_img": "previews/segmented/bellandur-lake-2017-01-30.png",
+      "bounds": [
+        [
+          12.9237288346904,
+          77.63703003779098
+        ],
+        [
+          12.949054252209015,
+          77.68204823389694
+        ]
+      ]
+    },
+    {
+      "date": "2017-02-28",
+      "area_km2": 3.2338,
+      "original_img": "previews/compressed/bellandur-lake-2017-02-28.webp",
+      "segmented_img": "previews/segmented/bellandur-lake-2017-02-28.png",
+      "bounds": [
+        [
+          12.9237288346904,
+          77.63703003779098
+        ],
+        [
+          12.949054252209015,
+          77.68204823389694
+        ]
+      ]
+    },
+    {
+      "date": "2017-03-30",
+      "area_km2": 0.5848,
+      "original_img": "previews/compressed/bellandur-lake-2017-03-30.webp",
+      "segmented_img": "previews/segmented/bellandur-lake-2017-03-30.png",
+      "bounds": [
+        [
+          12.9237288346904,
+          77.63703003779098
+        ],
+        [
+          12.949054252209015,
+          77.68204823389694
+        ]
+      ]
+    },
+    {
+      "date": "2017-04-30",
+      "area_km2": 1.4065,
+      "original_img": "previews/compressed/bellandur-lake-2017-04-30.webp",
+      "segmented_img": "previews/segmented/bellandur-lake-2017-04-30.png",
+      "bounds": [
+        [
+          12.9237288346904,
+          77.63703003779098
+        ],
+        [
+          12.949054252209015,
+          77.68204823389694
+        ]
+      ]
+    },
+    {
+      "date": "2017-05-30",
+      "area_km2": 0.8357,
+      "original_img": "previews/compressed/bellandur-lake-2017-05-30.webp",
+      "segmented_img": "previews/segmented/bellandur-lake-2017-05-30.png",
+      "bounds": [
+        [
+          12.9237288346904,
+          77.63703003779098
+        ],
+        [
+          12.949054252209015,
+          77.68204823389694
+        ]
+      ]
+    },
+    {
+      "date": "2017-10-30",
+      "area_km2": 1.4217,
+      "original_img": "previews/compressed/bellandur-lake-2017-10-30.webp",
+      "segmented_img": "previews/segmented/bellandur-lake-2017-10-30.png",
+      "bounds": [
+        [
+          12.9237288346904,
+          77.63703003779098
+        ],
+        [
+          12.949054252209015,
+          77.68204823389694
+        ]
+      ]
+    },
+    {
+      "date": "2017-12-30",
+      "area_km2": 1.3997,
+      "original_img": "previews/compressed/bellandur-lake-2017-12-30.webp",
+      "segmented_img": "previews/segmented/bellandur-lake-2017-12-30.png",
+      "bounds": [
+        [
+          12.9237288346904,
+          77.63703003779098
+        ],
+        [
+          12.949054252209015,
+          77.68204823389694
+        ]
+      ]
+    },
+    {
+      "date": "2018-03-30",
+      "area_km2": 1.259,
+      "original_img": "previews/compressed/bellandur-lake-2018-03-30.webp",
+      "segmented_img": "previews/segmented/bellandur-lake-2018-03-30.png",
+      "bounds": [
+        [
+          12.9237288346904,
+          77.63703003779098
+        ],
+        [
+          12.949054252209015,
+          77.68204823389694
+        ]
+      ]
+    },
+    {
+      "date": "2018-04-30",
+      "area_km2": 1.1595,
+      "original_img": "previews/compressed/bellandur-lake-2018-04-30.webp",
+      "segmented_img": "previews/segmented/bellandur-lake-2018-04-30.png",
+      "bounds": [
+        [
+          12.9237288346904,
+          77.63703003779098
+        ],
+        [
+          12.949054252209015,
+          77.68204823389694
+        ]
+      ]
+    },
+    {
+      "date": "2018-05-30",
+      "area_km2": 1.2852,
+      "original_img": "previews/compressed/bellandur-lake-2018-05-30.webp",
+      "segmented_img": "previews/segmented/bellandur-lake-2018-05-30.png",
+      "bounds": [
+        [
+          12.9237288346904,
+          77.63703003779098
+        ],
+        [
+          12.949054252209015,
+          77.68204823389694
+        ]
+      ]
+    },
+    {
+      "date": "2018-10-30",
+      "area_km2": 1.3155,
+      "original_img": "previews/compressed/bellandur-lake-2018-10-30.webp",
+      "segmented_img": "previews/segmented/bellandur-lake-2018-10-30.png",
+      "bounds": [
+        [
+          12.9237288346904,
+          77.63703003779098
+        ],
+        [
+          12.949054252209015,
+          77.68204823389694
+        ]
+      ]
+    },
+    {
+      "date": "2018-11-30",
+      "area_km2": 1.2749,
+      "original_img": "previews/compressed/bellandur-lake-2018-11-30.webp",
+      "segmented_img": "previews/segmented/bellandur-lake-2018-11-30.png",
+      "bounds": [
+        [
+          12.9237288346904,
+          77.63703003779098
+        ],
+        [
+          12.949054252209015,
+          77.68204823389694
+        ]
+      ]
+    },
+    {
+      "date": "2018-12-30",
+      "area_km2": 1.2567,
+      "original_img": "previews/compressed/bellandur-lake-2018-12-30.webp",
+      "segmented_img": "previews/segmented/bellandur-lake-2018-12-30.png",
+      "bounds": [
+        [
+          12.9237288346904,
+          77.63703003779098
+        ],
+        [
+          12.949054252209015,
+          77.68204823389694
+        ]
+      ]
+    },
+    {
+      "date": "2019-01-30",
+      "area_km2": 1.1909,
+      "original_img": "previews/compressed/bellandur-lake-2019-01-30.webp",
+      "segmented_img": "previews/segmented/bellandur-lake-2019-01-30.png",
+      "bounds": [
+        [
+          12.9237288346904,
+          77.63703003779098
+        ],
+        [
+          12.949054252209015,
+          77.68204823389694
+        ]
+      ]
+    },
+    {
+      "date": "2019-02-28",
+      "area_km2": 3.1436,
+      "original_img": "previews/compressed/bellandur-lake-2019-02-28.webp",
+      "segmented_img": "previews/segmented/bellandur-lake-2019-02-28.png",
+      "bounds": [
+        [
+          12.9237288346904,
+          77.63703003779098
+        ],
+        [
+          12.949054252209015,
+          77.68204823389694
+        ]
+      ]
+    },
+    {
+      "date": "2019-03-30",
+      "area_km2": 0.6025,
+      "original_img": "previews/compressed/bellandur-lake-2019-03-30.webp",
+      "segmented_img": "previews/segmented/bellandur-lake-2019-03-30.png",
+      "bounds": [
+        [
+          12.9237288346904,
+          77.63703003779098
+        ],
+        [
+          12.949054252209015,
+          77.68204823389694
+        ]
+      ]
+    },
+    {
+      "date": "2019-09-30",
+      "area_km2": 0.5988,
+      "original_img": "previews/compressed/bellandur-lake-2019-09-30.webp",
+      "segmented_img": "previews/segmented/bellandur-lake-2019-09-30.png",
+      "bounds": [
+        [
+          12.9237288346904,
+          77.63703003779098
+        ],
+        [
+          12.949054252209015,
+          77.68204823389694
+        ]
+      ]
+    },
+    {
+      "date": "2020-01-30",
+      "area_km2": 0.5354,
+      "original_img": "previews/compressed/bellandur-lake-2020-01-30.webp",
+      "segmented_img": "previews/segmented/bellandur-lake-2020-01-30.png",
+      "bounds": [
+        [
+          12.9237288346904,
+          77.63703003779098
+        ],
+        [
+          12.949054252209015,
+          77.68204823389694
+        ]
+      ]
+    },
+    {
+      "date": "2020-01-31",
+      "area_km2": 0.537,
+      "original_img": "previews/compressed/bellandur-lake-2020-01-31.webp",
+      "segmented_img": "previews/segmented/bellandur-lake-2020-01-31.png",
+      "bounds": [
+        [
+          12.9237288346904,
+          77.63703003779098
+        ],
+        [
+          12.949054252209015,
+          77.68204823389694
+        ]
+      ]
+    },
+    {
+      "date": "2020-02-29",
+      "area_km2": 0.4773,
+      "original_img": "previews/compressed/bellandur-lake-2020-02-29.webp",
+      "segmented_img": "previews/segmented/bellandur-lake-2020-02-29.png",
+      "bounds": [
+        [
+          12.9237288346904,
+          77.63703003779098
+        ],
+        [
+          12.949054252209015,
+          77.68204823389694
+        ]
+      ]
+    },
+    {
+      "date": "2020-11-30",
+      "area_km2": 0.365,
+      "original_img": "previews/compressed/bellandur-lake-2020-11-30.webp",
+      "segmented_img": "previews/segmented/bellandur-lake-2020-11-30.png",
+      "bounds": [
+        [
+          12.9237288346904,
+          77.63703003779098
+        ],
+        [
+          12.949054252209015,
+          77.68204823389694
+        ]
+      ]
+    },
+    {
+      "date": "2020-12-30",
+      "area_km2": 0.2845,
+      "original_img": "previews/compressed/bellandur-lake-2020-12-30.webp",
+      "segmented_img": "previews/segmented/bellandur-lake-2020-12-30.png",
+      "bounds": [
+        [
+          12.9237288346904,
+          77.63703003779098
+        ],
+        [
+          12.949054252209015,
+          77.68204823389694
+        ]
+      ]
+    },
+    {
+      "date": "2021-03-30",
+      "area_km2": 0.0139,
+      "original_img": "previews/compressed/bellandur-lake-2021-03-30.webp",
+      "segmented_img": "previews/segmented/bellandur-lake-2021-03-30.png",
+      "bounds": [
+        [
+          12.9237288346904,
+          77.63703003779098
+        ],
+        [
+          12.949054252209015,
+          77.68204823389694
+        ]
+      ]
+    },
+    {
+      "date": "2021-12-30",
+      "area_km2": 0.3961,
+      "original_img": "previews/compressed/bellandur-lake-2021-12-30.webp",
+      "segmented_img": "previews/segmented/bellandur-lake-2021-12-30.png",
+      "bounds": [
+        [
+          12.9237288346904,
+          77.63703003779098
+        ],
+        [
+          12.949054252209015,
+          77.68204823389694
+        ]
+      ]
+    },
+    {
+      "date": "2022-01-30",
+      "area_km2": 0.4033,
+      "original_img": "previews/compressed/bellandur-lake-2022-01-30.webp",
+      "segmented_img": "previews/segmented/bellandur-lake-2022-01-30.png",
+      "bounds": [
+        [
+          12.9237288346904,
+          77.63703003779098
+        ],
+        [
+          12.949054252209015,
+          77.68204823389694
+        ]
+      ]
+    },
+    {
+      "date": "2022-02-28",
+      "area_km2": 0.7142,
+      "original_img": "previews/compressed/bellandur-lake-2022-02-28.webp",
+      "segmented_img": "previews/segmented/bellandur-lake-2022-02-28.png",
+      "bounds": [
+        [
+          12.9237288346904,
+          77.63703003779098
+        ],
+        [
+          12.949054252209015,
+          77.68204823389694
+        ]
+      ]
+    },
+    {
+      "date": "2022-10-30",
+      "area_km2": 1.5569,
+      "original_img": "previews/compressed/bellandur-lake-2022-10-30.webp",
+      "segmented_img": "previews/segmented/bellandur-lake-2022-10-30.png",
+      "bounds": [
+        [
+          12.9237288346904,
+          77.63703003779098
+        ],
+        [
+          12.949054252209015,
+          77.68204823389694
+        ]
+      ]
+    },
+    {
+      "date": "2023-03-30",
+      "area_km2": 0.5651,
+      "original_img": "previews/compressed/bellandur-lake-2023-03-30.webp",
+      "segmented_img": "previews/segmented/bellandur-lake-2023-03-30.png",
+      "bounds": [
+        [
+          12.9237288346904,
+          77.63703003779098
+        ],
+        [
+          12.949054252209015,
+          77.68204823389694
+        ]
+      ]
+    },
+    {
+      "date": "2023-04-30",
+      "area_km2": 0.3589,
+      "original_img": "previews/compressed/bellandur-lake-2023-04-30.webp",
+      "segmented_img": "previews/segmented/bellandur-lake-2023-04-30.png",
+      "bounds": [
+        [
+          12.9237288346904,
+          77.63703003779098
+        ],
+        [
+          12.949054252209015,
+          77.68204823389694
+        ]
+      ]
+    },
+    {
+      "date": "2024-02-29",
+      "area_km2": 0.7436,
+      "original_img": "previews/compressed/bellandur-lake-2024-02-29.webp",
+      "segmented_img": "previews/segmented/bellandur-lake-2024-02-29.png",
+      "bounds": [
+        [
+          12.9237288346904,
+          77.63703003779098
+        ],
+        [
+          12.949054252209015,
+          77.68204823389694
+        ]
+      ]
+    },
+    {
+      "date": "2025-02-28",
+      "area_km2": 0.7053,
+      "original_img": "previews/compressed/bellandur-lake-2025-02-28.webp",
+      "segmented_img": "previews/segmented/bellandur-lake-2025-02-28.png",
+      "bounds": [
+        [
+          12.9237288346904,
+          77.63703003779098
+        ],
+        [
+          12.949054252209015,
+          77.68204823389694
+        ]
+      ]
+    }
+  ]
+}
