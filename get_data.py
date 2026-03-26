@@ -1,4 +1,19 @@
 #!/usr/bin/env python3
+"""
+get_data.py — Resumable historical satellite imagery downloader.
+
+Downloads historical Google Earth imagery for one or more bounding boxes using
+the GEHistoricalImagery CLI tool. Dates are selected with a preference for one
+per year, then filled up to the --target-images limit. Only dates for which all
+four corners of the bounding box are covered are downloaded.
+
+Usage:
+    # Single location
+    python3 get_data.py -n bellandur-lake --ll "12.924,77.637" --ur "12.949,77.682"
+
+    # Multiple locations from a JSON config file
+    python3 get_data.py -c lakes.json -z 17 --min-date 2006/01/01 --max-date 2025/12/31 -t 100 -w 4
+"""
 import os
 import subprocess
 import re
@@ -34,7 +49,7 @@ def get_dates_at_location(lat: str, lon: str, zoom: str, bin_path: str) -> set:
 def select_dates(
     available_dates: set, min_date: str, max_date: str, target: int
 ) -> list:
-    """Selects dates within timeframe, prioritzing one per year, up to the target."""
+    """Select dates within the timeframe, prioritising one per year, up to the target count."""
     valid_dates = [d for d in available_dates if min_date <= d <= max_date]
     dates = sorted(list(set(valid_dates)), reverse=True)
 

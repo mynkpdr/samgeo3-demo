@@ -1,7 +1,36 @@
+"""
+process_tif.py — TIFF post-processing and preview generation.
+
+Converts original lake GeoTIFFs and their corresponding segmented water masks
+into web-friendly previews (WEBP + PNG), computes water surface area in km²,
+and writes a ``lake_data.json`` ready to be consumed by ``index.html``.
+
+Directory layout expected (mirrors get_data.py + extract_segment.py output)::
+
+    lakes/
+        <lake>/  <lake>-YYYY-MM-DD.tif  …
+    lakes-segmented/
+        <lake>/  <lake>-YYYY-MM-DD.tif  …   ← binary masks
+
+Outputs::
+
+    previews/compressed/  <lake>-<date>.webp
+    previews/segmented/   <lake>-<date>.png
+    lake_data.json
+
+Usage:
+    # Dry-run to preview discovered pairs
+    python3 process_tif.py --dry-run
+
+    # Full run
+    python3 process_tif.py --lakes-dir lakes --segmented-dir lakes-segmented \\
+        --previews-dir previews --output-json lake_data.json --workers 4
+"""
 from __future__ import annotations
 
 import argparse
 import json
+import logging
 import math
 import os
 from concurrent.futures import ThreadPoolExecutor, as_completed
@@ -12,7 +41,19 @@ from typing import Iterable
 import numpy as np
 from PIL import Image
 
+# ---------------------------------------------------------------------------
+# Logging
+# ---------------------------------------------------------------------------
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s [%(levelname)s] %(message)s",
+    datefmt="%Y-%m-%d %H:%M:%S",
+)
+logger = logging.getLogger(__name__)
 
+# ---------------------------------------------------------------------------
+# Constants
+# ---------------------------------------------------------------------------
 BLUE_RGBA = (56, 189, 248, 200)
 WEBP_QUALITY = 50
 WEBP_METHOD = 4
@@ -87,7 +128,7 @@ def read_world_file(tfw_path: Path) -> GeoRef | None:
             if line.strip()
         ]
     except Exception as exc:
-        print(f"[WARN] Could not read world file {tfw_path}: {exc}")
+        logger.warning("Could not read world file %s: %s", tfw_path, exc)
         return None
 
     if len(values) < 6:
@@ -127,7 +168,7 @@ def read_geotiff_georef(tif_path: Path) -> GeoRef | None:
                 upper_left_center_y=upper_left_center_y,
             )
     except Exception as exc:
-        print(f"[WARN] Could not read GeoTIFF metadata {tif_path}: {exc}")
+        logger.warning("Could not read GeoTIFF metadata %s: %s", tif_path, exc)
         return None
 
 
@@ -234,8 +275,8 @@ def discover_tasks(
             tfw_path = original_tif.with_suffix(".tfw")
 
             if not original_tif.exists():
-                print(
-                    f"[WARN] Skipping {segmented_tif}: missing original TIFF {original_tif}"
+                logger.warning(
+                    "Skipping %s: missing original TIFF %s", segmented_tif, original_tif
                 )
                 continue
 
@@ -259,12 +300,12 @@ def process_one(
 ) -> tuple[str, dict] | None:
     georef = load_georef(task.original_tif, task.tfw_path)
     if georef is None:
-        print(f"[WARN] Skipping {task.original_tif}: no georeferencing found")
+        logger.warning("Skipping %s: no georeferencing found", task.original_tif)
         return None
 
     if dry_run:
-        print(f"[DRY-RUN] {task.original_tif} -> {task.output_original}")
-        print(f"[DRY-RUN] {task.segmented_tif} -> {task.output_segmented}")
+        logger.info("[DRY-RUN] %s -> %s", task.original_tif, task.output_original)
+        logger.info("[DRY-RUN] %s -> %s", task.segmented_tif, task.output_segmented)
         return None
 
     source_size, preview_size = convert_original_to_webp(
@@ -311,22 +352,24 @@ def main() -> int:
 
     tasks = discover_tasks(lakes_dir, segmented_dir, previews_dir)
     if not tasks:
-        print("[WARN] No TIFF pairs found.")
+        logger.warning("No TIFF pairs found. Check --lakes-dir and --segmented-dir.")
         return 0
 
-    print(
-        f"[INFO] Found {len(tasks)} TIFF pairs across {len({task.lake for task in tasks})} lakes."
+    logger.info(
+        "Found %d TIFF pair(s) across %d lake(s).",
+        len(tasks),
+        len({task.lake for task in tasks}),
     )
 
     processed: list[tuple[str, dict]] = []
     total = len(tasks)
     workers = max(1, args.workers)
-    print(f"[INFO] Using {workers} worker(s).", flush=True)
+    logger.info("Using %d worker(s).", workers)
 
     if workers == 1:
         for index, task in enumerate(tasks, start=1):
-            print(
-                f"[{index}/{total}] Processing {format_task_label(task)}...", flush=True
+            logger.info(
+                "[%d/%d] Processing %s…", index, total, format_task_label(task)
             )
             result = process_one(task, args.mask_threshold, args.dry_run)
             if result is not None:
@@ -343,20 +386,22 @@ def main() -> int:
             for future in as_completed(futures):
                 index, task = futures[future]
                 result = future.result()
-                print(
-                    f"[{index}/{total}] Finished {format_task_label(task)}", flush=True
+                logger.info(
+                    "[%d/%d] Finished %s", index, total, format_task_label(task)
                 )
                 if result is not None:
                     processed.append(result)
 
     if args.dry_run:
-        print("[DONE] Dry run complete.")
+        logger.info("Dry run complete.")
         return 0
 
     lake_data = group_results(processed)
     output_json.write_text(json.dumps(lake_data, indent=2), encoding="utf-8")
-    print(
-        f"[DONE] Wrote {output_json} with {sum(len(items) for items in lake_data.values())} entries."
+    logger.info(
+        "Done. Wrote %s with %d entries.",
+        output_json,
+        sum(len(items) for items in lake_data.values()),
     )
     return 0
 

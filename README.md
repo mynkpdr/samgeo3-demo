@@ -1,154 +1,344 @@
-# Lake Monitor — End-to-end pipeline
+# Lake Monitor — Historical Water-Body Analysis Pipeline
 
-Lightweight pipeline to download historical satellite imagery for defined bounding boxes, pair originals with segmented water masks, generate web-friendly previews, compute lake surface area, and produce a ready-to-serve JSON dataset for the web viewer.
+A lightweight, end-to-end pipeline that:
 
-This repository contains two main stages:
-- Image acquisition: `get_data.py` — downloads historical imagery that fully covers a user-selected bounding box using the GEHistoricalImagery tool.
-- Post-processing & preview generation: `process_tif.py` — converts TIFFs to previews, computes area, and writes `lake_data.json` used by the viewer `index.html`.
+1. **Downloads** historical Google Earth satellite imagery for any water body worldwide
+2. **Segments** water surfaces from imagery using SAM3 (Segment Anything Model 3)
+3. **Processes** image pairs into web-optimised previews and computes surface area in km²
+4. **Visualises** historical lake trends in an interactive geospatial web viewer
+
+---
+
+## Pipeline Overview
+
+```
+┌─────────────────────┐     ┌─────────────────────┐     ┌─────────────────────┐     ┌───────────────┐
+│   get_coordinates   │     │     get_data.py     │     │  extract_segment.py │     │ process_tif.py│
+│       .html         │────▶│  Download imagery   │────▶│  Segment water     │────▶│ Build previews│
+│  Pick bounding box  │     │(GEHistoricalImagery)│     │  masks (SAM3)       │     │ + lake_data   │
+└─────────────────────┘     └─────────────────────┘     └─────────────────────┘     └───────┬───────┘
+                                                                                            │
+                                                                                            ▼
+                                                                                     ┌─────────────┐
+                                                                                     │  index.html │
+                                                                                     │  Web viewer │
+                                                                                     └─────────────┘
+```
+
+**Directory layout produced by the pipeline:**
+
+```
+.
+├── lakes/                       ← Raw GeoTIFFs (get_data.py output)
+│   └── <lake>/
+│       └── <lake>-YYYY-MM-DD.tif
+├── lakes-segmented/             ← Binary water masks (extract_segment.py output)
+│   └── <lake>/
+│       └── <lake>-YYYY-MM-DD.tif
+├── previews/                    ← Web previews (process_tif.py output)
+│   ├── compressed/              ← <lake>-<date>.webp  (original, space-efficient)
+│   └── segmented/               ← <lake>-<date>.png   (transparent blue mask)
+├── lake_data.json               ← Metadata consumed by index.html
+├── lakes.json                   ← Bounding box configuration (user-created)
+├── get_data.py
+├── extract_segment.py
+├── process_tif.py
+├── get_coordinates.html
+└── index.html
+```
+
+---
+
+## Requirements
+
+### Python
+- Python **3.12+**
+- `pillow`, `numpy` — for `process_tif.py`
+- `segment-geospatial[samgeo3]`, `huggingface_hub` — for `extract_segment.py`
+
+```bash
+# Core dependencies (always required)
+pip install pillow numpy
+
+# Segmentation dependencies (required for extract_segment.py only)
+pip install "segment-geospatial[samgeo3]" huggingface_hub
+```
+
+### External Tool
+- **[GEHistoricalImagery](https://github.com/Mbucari/GEHistoricalImagery)** CLI binary — required by `get_data.py`
+
+  Download the appropriate binary for your OS from the [releases page](https://github.com/Mbucari/GEHistoricalImagery/releases) and make it executable. Either add it to your `$PATH` or pass the full path via `--bin-path`.
+
+### Tokens
+- A **Hugging Face token** is required for `extract_segment.py` to download the SAM3 model weights:
+
+  ```bash
+  export HF_TOKEN=hf_your_token_here
+  ```
+- Note: You need permission to access the `sam3` model on Hugging Face. If you encounter access issues, please request access from the model owner.
+---
 
 ## Quickstart
 
-1. Install Python dependencies:
+### Step 1 — Pick bounding boxes
+
+Serve the repository locally and open the coordinate picker:
 
 ```bash
-python3 -m pip install --user --upgrade pip
-python3 -m pip install pillow numpy
-```
-
-2. Prepare or obtain the GEHistoricalImagery command-line binary (see **GEHistoricalImagery** section).
-
-3. Use the coordinate helper to pick bounding boxes:
-
-```bash
-# Serve the repository and open the map in a browser
 python3 -m http.server 8000
-# then open http://localhost:8000/get_coordinates.html
+# Open http://localhost:8000/get_coordinates.html
 ```
 
-4. Create a JSON config with locations (example `areas.json`) and run the downloader:
+Pan and zoom the map to your area of interest. The info box shows the **Lower Left** and **Upper Right** coordinates for the current 16:9 viewport — copy these values.
+
+### Step 2 — Create a location config file
+
+Save your coordinates in a JSON file (e.g. `lakes.json`):
 
 ```json
 {
+    "bellandur-lake": {
+        "ll": "12.92372883,77.63703272",
+        "ur": "12.94905157,77.68205091"
+    },
     "canyon-lake": {
         "ll": "29.84479383,-98.33190113",
         "ur": "29.92298862,-98.19288816"
-    },
+    }
 }
 ```
 
-```bash
-python3 get_data.py -c areas.json -z 17 --min-date 2006/01/01 --max-date 2025/12/31 -t 100 -b /path/to/GEHistoricalImagery -w 4
-```
+Each key is the **location name** (used as directory and file prefix). `ll` = lower-left `lat,lon`, `ur` = upper-right `lat,lon`.
 
-5. Place segmented masks into `lakes-segmented/<lake>/` matching the TIFF names produced by the downloader (see **Processing**).
-
-6. Generate previews and `lake_data.json`:
+### Step 3 — Download imagery
 
 ```bash
-python3 process_tif.py --lakes-dir lakes --segmented-dir lakes-segmented --previews-dir previews --output-json lake_data.json --workers 4
+python3 get_data.py -c lakes.json -z 17 \
+    --min-date 2006/01/01 --max-date 2025/12/31 \
+    -t 100 -w 4 -b /path/to/GEHistoricalImagery
 ```
 
-7. Serve the repository and open the viewer:
+Output: `lakes/<location-name>/<location-name>-YYYY-MM-DD.tif` per date.
+
+### Step 4 — Segment water surfaces
+
+```bash
+export HF_TOKEN=hf_your_token_here
+python3 extract_segment.py --input-dir lakes --output-dir lakes-segmented
+```
+
+Output: binary water mask TIFFs in `lakes-segmented/` mirroring the `lakes/` structure.
+
+### Step 5 — Generate previews and metadata
+
+```bash
+# Dry-run first to verify discovered pairs
+python3 process_tif.py --dry-run
+
+# Full run
+python3 process_tif.py \
+    --lakes-dir lakes \
+    --segmented-dir lakes-segmented \
+    --previews-dir previews \
+    --output-json lake_data.json \
+    --workers 4
+```
+
+Output: `previews/`, `lake_data.json`.
+
+### Step 6 — Open the viewer
 
 ```bash
 python3 -m http.server 8000
-# then open http://localhost:8000/index.html
+# Open http://localhost:8000/index.html
 ```
 
-## Files & layout
+---
 
-- `get_data.py` — downloader that queries the GEHistoricalImagery tool and writes TIFFs into a per-location folder (one TIFF per date). Usage: see examples below.
-- `process_tif.py` — converts original TIFFs to compressed `webp` previews and segmented masks to transparent `png`, computes area in km², and writes `lake_data.json`.
-- `get_coordinates.html` — small Leaflet tool to interactively pick a 16:9 bounding box and copy the `ll`/`ur` coordinates.
-- `index.html` — the web viewer that consumes `lake_data.json` and `previews/`.
+## Script Reference
 
-## Detailed usage
+### `get_data.py` — Historical imagery downloader
 
-### 1) Picking coordinates
+Downloads historical Google Earth imagery for one or more bounding boxes.
 
-Open [get_coordinates.html](get_coordinates.html) in a browser (see Quickstart) and position the map. The helper enforces a 16:9 bounding box and displays the `Lower Left` and `Upper Right` coordinates which you can copy directly into your JSON config or CLI invocation.
+**Key behaviour:**
+- Checks **all four corners** of each bounding box to ensure fully-covered imagery only
+- Selects dates **preferring one per year**, then fills up to `--target-images`
+- Skips dates for which the output file already exists (resumable)
 
-Example minimal config (save as `areas.json`):
+```
+usage: get_data.py [-h] (-c CONFIG | -n NAME) [--ll LL] [--ur UR]
+                   [-z ZOOM] [--min-date MIN_DATE] [--max-date MAX_DATE]
+                   [-t TARGET_IMAGES] [-b BIN_PATH] [-w WORKERS] [-v]
 
-```json
-{
-    "my-lake": {"ll": "12.98000000,77.63000000", "ur": "12.99000000,77.64000000"}
-}
+options:
+  -c, --config CONFIG       Path to JSON file containing location data
+  -n, --name NAME           Name of a single location to process
+  --ll LL                   Lower-left coordinates (lat,lon) for --name
+  --ur UR                   Upper-right coordinates (lat,lon) for --name
+  -z, --zoom ZOOM           Zoom level (default: 17)
+  --min-date MIN_DATE       Earliest date YYYY/MM/DD (default: 2006/01/01)
+  --max-date MAX_DATE       Latest date YYYY/MM/DD (default: 2025/12/31)
+  -t, --target-images N     Target images per location (default: 100)
+  -b, --bin-path PATH       Path to GEHistoricalImagery binary
+  -w, --workers N           Parallel location workers (default: 4)
+  -v, --verbose             Enable DEBUG logging
 ```
 
-### 2) GEHistoricalImagery (downloader) notes
-
-- `get_data.py` calls an external tool (default binary name: `GEHistoricalImagery`) to query available dates and to download tiles. The script expects that binary to be installed and reachable either by name or by the full path you pass to `-b/--bin-path`.
-- Source and further instructions for that tool: https://github.com/Mbucari/GEHistoricalImagery
-
-If the binary is not on your PATH, pass the full path via `-b /path/to/GEHistoricalImagery`.
-
-Example: single-location download
+**Examples:**
 
 ```bash
-python3 get_data.py -n bellandur-lake --ll "12.92372883,77.63703272" --ur "12.94905157,77.68205091" -b /path/to/GEHistoricalImagery
+# Single location
+python3 get_data.py \
+    -n bellandur-lake \
+    --ll "12.92372883,77.63703272" \
+    --ur "12.94905157,77.68205091" \
+    -b ./GEHistoricalImagery
+
+# Multiple locations from file, custom date range
+python3 get_data.py \
+    -c lakes.json \
+    -z 17 \
+    --min-date 2010/01/01 \
+    --max-date 2024/12/31 \
+    -t 50 \
+    -w 4 \
+    -b /usr/local/bin/GEHistoricalImagery
 ```
 
-Example: multi-location from file
+---
 
-```bash
-python3 get_data.py -c areas.json -z 17 --min-date 2006/01/01 --max-date 2025/12/31 -t 100 -b /path/to/GEHistoricalImagery -w 4
+### `extract_segment.py` — Water mask segmentation
+
+Applies SAM3 text-prompted segmentation to produce binary water masks.
+
+```
+usage: extract_segment.py [-h] [-i INPUT_DIR] [-o OUTPUT_DIR]
+                           [-p PROMPT] [--confidence CONFIDENCE] [-v]
+
+options:
+  -i, --input-dir DIR       Root folder of input GeoTIFFs (default: lakes)
+  -o, --output-dir DIR      Root folder for output masks (default: lakes-segmented)
+  -p, --prompt TEXT         Segmentation prompt (default: Water)
+  --confidence FLOAT        SAM3 confidence threshold 0–1 (default: 0.4)
+  -v, --verbose             Enable DEBUG logging
+
+environment:
+  HF_TOKEN                  Hugging Face token (required)
 ```
 
-Notes about downloader behavior
-- The script checks the four corners of the requested bounding box and only selects dates that contain all four corner points (ensures full coverage).
-- Dates are selected with a preference for one-per-year, then filled up to the `--target-images` limit if more are available.
-- Output: a directory for each location (e.g., `bellandur-lake/`) containing TIFFs named `<location>-YYYY-MM-DD.tif`.
-
-### 3) Preparing segmented masks
-
-The pipeline expects segmented TIFF masks that correspond to each original TIFF. Masks should be placed under `lakes-segmented/<lake>/<lake>-YYYY-MM-DD.tif` and must have the same raster size as the original (or will be resized during preview generation).
-
-If you do not yet have segmented masks, you will need to generate them with your segmentation workflow (not included here).
-
-### 4) Processing TIFF pairs
-
-`process_tif.py` discovers TIFF pairs by iterating `lakes-segmented/*/*.tif` and looking for matching originals in `lakes/<lake>/*.tif`.
-
-Run a dry-run first to inspect the discovered pairs:
+**Examples:**
 
 ```bash
+# Full batch (all sub-folders in lakes/)
+export HF_TOKEN=hf_your_token_here
+python3 extract_segment.py
+
+# Custom prompt and confidence
+python3 extract_segment.py \
+    -i lakes \
+    -o lakes-segmented \
+    -p "Lake water body" \
+    --confidence 0.5
+
+# Single lake folder
+python3 extract_segment.py \
+    -i lakes/bellandur-lake \
+    -o lakes-segmented/bellandur-lake
+```
+
+---
+
+### `process_tif.py` — Preview generation and metadata
+
+Converts TIFF pairs into web previews and builds `lake_data.json`.
+
+```
+usage: process_tif.py [-h] [--lakes-dir DIR] [--segmented-dir DIR]
+                      [--previews-dir DIR] [--output-json FILE]
+                      [--mask-threshold N] [--workers N] [--dry-run]
+
+options:
+  --lakes-dir DIR           Original TIFFs root (default: lakes)
+  --segmented-dir DIR       Segmented masks root (default: lakes-segmented)
+  --previews-dir DIR        Preview output root (default: previews)
+  --output-json FILE        Output JSON path (default: lake_data.json)
+  --mask-threshold N        Mask binarisation threshold 0–255 (default: 0)
+  --workers N               Parallel workers (default: auto, max 2)
+  --dry-run                 List pairs without writing files
+```
+
+**Outputs per TIFF pair:**
+
+| File | Description |
+|---|---|
+| `previews/compressed/<lake>-<date>.webp` | Compressed preview of the original (≤1920×1080, quality 50) |
+| `previews/segmented/<lake>-<date>.png`   | Transparent PNG overlay with blue water mask |
+| `lake_data.json`                         | JSON mapping each lake to a list of `{date, area_km2, original_img, segmented_img, bounds}` entries |
+
+**Examples:**
+
+```bash
+# Dry-run inspection
 python3 process_tif.py --dry-run
+
+# Standard run
+python3 process_tif.py \
+    --lakes-dir lakes \
+    --segmented-dir lakes-segmented \
+    --previews-dir previews \
+    --output-json lake_data.json \
+    --workers 4
 ```
 
-Then run the real processing (creates `previews/` and `lake_data.json`):
+---
+
+### `get_coordinates.html` — Interactive bounding box picker
+
+A Leaflet-based map tool for selecting bounding boxes interactively.
+
+- Displays the current view as a **16:9 bounding box** (matching GEHistoricalImagery tile layout)
+- Shows **Zoom**, **Lower Left**, and **Upper Right** coordinates in real time
+- Supports **place search** (via Nominatim) and **direct coordinate navigation**
+- Toggles between Street and Satellite base layers
+
+Serve locally and open in a browser:
 
 ```bash
-python3 process_tif.py --lakes-dir lakes --segmented-dir lakes-segmented --previews-dir previews --output-json lake_data.json --workers 4
+python3 -m http.server 8000
+# http://localhost:8000/get_coordinates.html
 ```
 
-Outputs
-- `previews/compressed/<lake>-<date>.webp` — compressed preview of the original image
-- `previews/segmented/<lake>-<date>.png` — colored transparent mask for the segmented output
-- `lake_data.json` — JSON mapping lakes to a list of entries `{date, area_km2, original_img, segmented_img, bounds}` used by `index.html`.
+---
 
-### 5) Viewer
+## Troubleshooting
 
-Open [index.html](index.html) from the repository root in a browser (or serve with `python3 -m http.server`), then browse the available lakes and timelines.
+| Symptom | Cause | Fix |
+|---|---|---|
+| `Binary not found at …` | GEHistoricalImagery not on PATH | Pass full path with `-b /path/to/GEHistoricalImagery` |
+| No dates found / incomplete coverage | Bounding box too large at chosen zoom | Reduce zoom (`-z 16`) or shrink the bounding box |
+| Missing georeference warning | TIFF has no world file (`.tfw`) and no embedded GeoTIFF tags | Re-download the TIFF or ensure GEHistoricalImagery writes metadata |
+| `HF_TOKEN` not set | Token missing from environment | `export HF_TOKEN=hf_…` before running `extract_segment.py` |
+| No masks generated by SAM3 | Prompt doesn't match scene / low confidence | Try a more specific prompt (`-p "Open water"`) or lower `--confidence` |
+| TIFF pair skipped in process_tif | Segmented mask present but original TIFF missing | Ensure `lakes/` and `lakes-segmented/` filenames match exactly |
+| Slow processing | Default worker count | Increase `--workers` in both `get_data.py` and `process_tif.py` |
 
-## Common issues & troubleshooting
-
-- Binary not found: If you see `Binary not found at ...`, verify the `GEHistoricalImagery` binary path and use `-b` to set it explicitly.
-- No dates found / incomplete coverage: The downloader verifies that all four corners are covered. If your bounding box is too large (high zoom), there may be no fully covering images. Try reducing zoom or shrinking the box.
-- Missing georeference: `process_tif.py` will use a corresponding `.tfw` world file if present, or read GeoTIFF tags. If georeferencing is missing, that TIFF pair will be skipped.
-- Performance: adjust `--workers` in both scripts to tune parallelism.
+---
 
 ## Dependencies
 
-- Python 3.12+
-- Python packages: `pillow`, `numpy`
+| Package | Used by | Purpose |
+|---|---|---|
+| `pillow` | `process_tif.py` | TIFF/WEBP/PNG I/O |
+| `numpy` | `process_tif.py` | Fast pixel-level area computation |
+| `segment-geospatial[samgeo3]` | `extract_segment.py` | SAM3 inference |
+| `huggingface_hub` | `extract_segment.py` | Model weight download |
+| [GEHistoricalImagery](https://github.com/Mbucari/GEHistoricalImagery) | `get_data.py` | Tile download from Google Earth |
+| [Leaflet](https://leafletjs.com/) | `index.html`, `get_coordinates.html` | Interactive mapping |
+| [Chart.js](https://www.chartjs.org/) | `index.html` | Area trend chart |
 
-Install with:
-
-```bash
-python3 -m pip install pillow numpy
-```
+---
 
 ## License
 
-This repository is available under the MIT License. See the `LICENSE` file.
+This repository is available under the **MIT License**. See the [`LICENSE`](LICENSE) file for details.
