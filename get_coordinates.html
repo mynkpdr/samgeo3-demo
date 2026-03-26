@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Leaflet Map</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: monospace; background: #1a1a1a; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; }
+
+    #toolbar {
+      display: flex;
+      gap: 6px;
+      padding: 8px 0;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+    #toolbar input {
+      flex: 1;
+      min-width: 110px;
+      padding: 7px 10px;
+      border: 1px solid #555;
+      border-radius: 4px;
+      font-size: 12px;
+      background: #2a2a2a;
+      color: #eee;
+      outline: none;
+    }
+    #toolbar input::placeholder { color: #888; }
+    #toolbar button {
+      padding: 7px 12px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 12px;
+      white-space: nowrap;
+    }
+    .btn-blue  { background: #3a7bd5; color: #fff; }
+    .btn-green { background: #2e9e5b; color: #fff; }
+    .btn-blue:hover  { background: #2c63b8; }
+    .btn-green:hover { background: #228048; }
+    .divider { color: #444; font-size: 18px; line-height: 1; align-self: center; }
+
+    #map-wrap { position: relative; }
+    #map { display: block; }
+
+    #info-box {
+      position: absolute;
+      bottom: 10px;
+      left: 10px;
+      z-index: 1000;
+      background: rgba(0,0,0,0.75);
+      color: #e0e0e0;
+      padding: 10px 14px;
+      border-radius: 5px;
+      font-size: 12px;
+      line-height: 2;
+      border: 1px solid #444;
+    }
+    #info-box .label { color: #aaa; }
+    #info-box .val   { color: #7ecfff; font-weight: bold; }
+  </style>
+</head>
+<body>
+
+<div id="toolbar">
+  <!-- Place search -->
+  <input type="text" id="search-input" placeholder="Search place…" style="max-width:200px"/>
+  <button class="btn-blue" onclick="searchPlace()">Search</button>
+
+  <span class="divider">|</span>
+
+  <!-- Go to coordinates -->
+  <input type="text" id="coord-lat" placeholder="Lat (e.g. 12.9800)" style="max-width:150px"/>
+  <input type="text" id="coord-lng" placeholder="Lng (e.g. 77.6300)" style="max-width:150px"/>
+  <button class="btn-green" onclick="gotoCoords()">Go to Coords</button>
+</div>
+
+<div id="map-wrap">
+  <div id="map"></div>
+  <div id="info-box">
+    <div><span class="label">Zoom:        </span><span class="val" id="zoom-val">—</span></div>
+    <div><span class="label">Lower Left:  </span><span class="val" id="ll-val">—</span></div>
+    <div><span class="label">Upper Right: </span><span class="val" id="ur-val">—</span></div>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script>
+  /* ── 1. 16:9 map sized to viewport ── */
+  const maxWidth = window.innerWidth - 20;
+  const maxHeight = window.innerHeight - 80;
+  let width, height;
+  if (maxWidth / maxHeight > 16 / 9) {
+    height = maxHeight;
+    width = height * 16 / 9;
+  } else {
+    width = maxWidth;
+    height = width * 9 / 16;
+  }
+  const mapEl  = document.getElementById('map');
+  const wrapEl = document.getElementById('map-wrap');
+  const toolbar = document.getElementById('toolbar');
+  mapEl.style.width  = wrapEl.style.width  = toolbar.style.width = width + 'px';
+  mapEl.style.height = wrapEl.style.height = height + 'px';
+
+  /* ── 2. Init map ── */
+  const map = L.map('map', {
+    zoomControl: false,
+    // allow fractional (smooth) zoom instead of snapping to integer levels
+    zoomSnap: 0,
+    // smaller step for zoom control button clicks
+    zoomDelta: 0.25,
+    // control how many pixels of wheel scroll equals one zoom level (tweak for sensitivity)
+    wheelPxPerZoomLevel: 60,
+    zoomAnimation: true,
+    inertia: true
+  }).setView([12.98, 77.63], 14);
+
+  const streets = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '© OpenStreetMap contributors', maxZoom: 19
+  });
+  const satellite = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+    attribution: '© Esri, Maxar, Earthstar Geographics', maxZoom: 19
+  });
+  streets.addTo(map);
+  L.control.layers({ 'Street': streets, 'Satellite': satellite }, {}, { position: 'topright' }).addTo(map);
+
+  // Add a custom zoom control that respects fractional zoom steps
+  const customZoom = L.control({ position: 'topleft' });
+  customZoom.onAdd = function () {
+    const container = L.DomUtil.create('div', 'leaflet-bar');
+    const btnIn = L.DomUtil.create('a', 'leaflet-control-zoom-in', container);
+    btnIn.innerHTML = '+';
+    btnIn.href = '#';
+    btnIn.title = 'Zoom in';
+
+    const btnOut = L.DomUtil.create('a', 'leaflet-control-zoom-out', container);
+    btnOut.innerHTML = '−';
+    btnOut.href = '#';
+    btnOut.title = 'Zoom out';
+
+    L.DomEvent.on(btnIn, 'click', L.DomEvent.stopPropagation)
+      .on(btnIn, 'click', L.DomEvent.preventDefault)
+      .on(btnIn, 'click', () => map.setZoom(map.getZoom() + map.options.zoomDelta));
+
+    L.DomEvent.on(btnOut, 'click', L.DomEvent.stopPropagation)
+      .on(btnOut, 'click', L.DomEvent.preventDefault)
+      .on(btnOut, 'click', () => map.setZoom(map.getZoom() - map.options.zoomDelta));
+
+    return container;
+  };
+  customZoom.addTo(map);
+
+  /* ── 3. 16:9 bounds calculation ── */
+  function getBoundsInfo() {
+    const b = map.getBounds();
+    const sw = b.getSouthWest();
+    const ne = b.getNorthEast();
+    const cLat = (sw.lat + ne.lat) / 2;
+    const cLng = (sw.lng + ne.lng) / 2;
+
+    // Current bounds
+    const halfLat = (ne.lat - sw.lat) / 2;
+    const halfLng = (ne.lng - sw.lng) / 2;
+
+    // Enforce exact 16:9 in raw degree spans (lng span / lat span = 16/9)
+    const targetRatio = 16 / 9;
+    let finalHalfLat, finalHalfLng;
+    
+    if (halfLng / halfLat > targetRatio) {
+      // Width is too wide, adjust height
+      finalHalfLat = halfLng / targetRatio;
+      finalHalfLng = halfLng;
+    } else {
+      // Height is too tall, adjust width
+      finalHalfLat = halfLat;
+      finalHalfLng = halfLat * targetRatio;
+    }
+
+    return {
+      sw: { lat: cLat - finalHalfLat, lng: cLng - finalHalfLng },
+      ne: { lat: cLat + finalHalfLat, lng: cLng + finalHalfLng }
+    };
+  }
+  function fmt(v) { return v.toFixed(8); }
+
+  function updateInfo() {
+    const sq = getBoundsInfo();
+    document.getElementById('zoom-val').textContent = map.getZoom().toFixed(2);
+    document.getElementById('ll-val').textContent   = fmt(sq.sw.lat) + ',' + fmt(sq.sw.lng);
+    document.getElementById('ur-val').textContent   = fmt(sq.ne.lat) + ',' + fmt(sq.ne.lng);
+  }
+
+  map.on('moveend', updateInfo);
+  map.on('zoomend', updateInfo);
+  updateInfo();
+
+  /* ── 4. Place search (Nominatim) ── */
+  let searchMarker = null;
+  async function searchPlace() {
+    const query = document.getElementById('search-input').value.trim();
+    if (!query) return;
+    try {
+      const res  = await fetch(
+        'https://nominatim.openstreetmap.org/search?format=json&q=' + encodeURIComponent(query) + '&limit=1',
+        { headers: { 'Accept-Language': 'en' } }
+      );
+      const data = await res.json();
+      if (!data.length) { alert('Place not found.'); return; }
+      const { lat, lon, display_name } = data[0];
+      if (searchMarker) map.removeLayer(searchMarker);
+      searchMarker = L.marker([+lat, +lon]).addTo(map).bindPopup(display_name).openPopup();
+      map.setView([+lat, +lon], 14);
+    } catch { alert('Search failed. Check your connection.'); }
+  }
+  document.getElementById('search-input').addEventListener('keydown', e => { if (e.key === 'Enter') searchPlace(); });
+
+  /* ── 5. Go to coordinates ── */
+  let coordMarker = null;
+  function gotoCoords() {
+    const lat = parseFloat(document.getElementById('coord-lat').value);
+    const lng = parseFloat(document.getElementById('coord-lng').value);
+    if (isNaN(lat) || isNaN(lng) || lat < -90 || lat > 90 || lng < -180 || lng > 180) {
+      alert('Enter valid coordinates.\nLat: -90 to 90,  Lng: -180 to 180');
+      return;
+    }
+    if (coordMarker) map.removeLayer(coordMarker);
+    coordMarker = L.marker([lat, lng]).addTo(map)
+      .bindPopup('📍 ' + lat.toFixed(6) + ', ' + lng.toFixed(6)).openPopup();
+    map.setView([lat, lng], 15);
+  }
+  document.getElementById('coord-lat').addEventListener('keydown', e => { if (e.key === 'Enter') gotoCoords(); });
+  document.getElementById('coord-lng').addEventListener('keydown', e => { if (e.key === 'Enter') gotoCoords(); });
+</script>
+</body>
+</html>

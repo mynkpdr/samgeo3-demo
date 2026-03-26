@@ -42,14 +42,20 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description="Convert lake TIFFs into WEBP/PNG previews and build lake_data.json."
     )
-    parser.add_argument("--lakes-dir", default="lakes", help="Directory containing original lake TIFFs.")
+    parser.add_argument(
+        "--lakes-dir", default="lakes", help="Directory containing original lake TIFFs."
+    )
     parser.add_argument(
         "--segmented-dir",
         default="lakes-segmented",
         help="Directory containing segmented TIFF masks.",
     )
-    parser.add_argument("--previews-dir", default="previews", help="Output preview root directory.")
-    parser.add_argument("--output-json", default="lake_data.json", help="Output metadata JSON file.")
+    parser.add_argument(
+        "--previews-dir", default="previews", help="Output preview root directory."
+    )
+    parser.add_argument(
+        "--output-json", default="lake_data.json", help="Output metadata JSON file."
+    )
     parser.add_argument(
         "--mask-threshold",
         type=int,
@@ -75,7 +81,11 @@ def read_world_file(tfw_path: Path) -> GeoRef | None:
         return None
 
     try:
-        values = [float(line.strip()) for line in tfw_path.read_text(encoding="utf-8").splitlines() if line.strip()]
+        values = [
+            float(line.strip())
+            for line in tfw_path.read_text(encoding="utf-8").splitlines()
+            if line.strip()
+        ]
     except Exception as exc:
         print(f"[WARN] Could not read world file {tfw_path}: {exc}")
         return None
@@ -179,7 +189,9 @@ def calculate_area_km2(segmented_tif: Path, georef: GeoRef) -> float:
     return round(area_m2 / 1_000_000.0, 4)
 
 
-def convert_original_to_webp(src_path: Path, dst_path: Path) -> tuple[tuple[int, int], tuple[int, int]]:
+def convert_original_to_webp(
+    src_path: Path, dst_path: Path
+) -> tuple[tuple[int, int], tuple[int, int]]:
     dst_path.parent.mkdir(parents=True, exist_ok=True)
     with Image.open(src_path) as image:
         source_size = image.size
@@ -189,12 +201,14 @@ def convert_original_to_webp(src_path: Path, dst_path: Path) -> tuple[tuple[int,
         return source_size, rgb.size
 
 
-def convert_segmented_to_png(src_path: Path, dst_path: Path, threshold: int, target_size: tuple[int, int]) -> None:
+def convert_segmented_to_png(
+    src_path: Path, dst_path: Path, threshold: int, target_size: tuple[int, int]
+) -> None:
     dst_path.parent.mkdir(parents=True, exist_ok=True)
     with Image.open(src_path) as image:
         mask = image.convert("L")
         if mask.size != target_size:
-          mask = mask.resize(target_size, Image.Resampling.NEAREST)
+            mask = mask.resize(target_size, Image.Resampling.NEAREST)
 
         binary = mask.point(lambda value: 1 if value > threshold else 0).convert("P")
         palette = [0, 0, 0, BLUE_RGBA[0], BLUE_RGBA[1], BLUE_RGBA[2]]
@@ -220,7 +234,9 @@ def discover_tasks(
             tfw_path = original_tif.with_suffix(".tfw")
 
             if not original_tif.exists():
-                print(f"[WARN] Skipping {segmented_tif}: missing original TIFF {original_tif}")
+                print(
+                    f"[WARN] Skipping {segmented_tif}: missing original TIFF {original_tif}"
+                )
                 continue
 
             tasks.append(
@@ -238,7 +254,9 @@ def discover_tasks(
     return tasks
 
 
-def process_one(task: LakeTask, threshold: int, dry_run: bool) -> tuple[str, dict] | None:
+def process_one(
+    task: LakeTask, threshold: int, dry_run: bool
+) -> tuple[str, dict] | None:
     georef = load_georef(task.original_tif, task.tfw_path)
     if georef is None:
         print(f"[WARN] Skipping {task.original_tif}: no georeferencing found")
@@ -249,7 +267,9 @@ def process_one(task: LakeTask, threshold: int, dry_run: bool) -> tuple[str, dic
         print(f"[DRY-RUN] {task.segmented_tif} -> {task.output_segmented}")
         return None
 
-    source_size, preview_size = convert_original_to_webp(task.original_tif, task.output_original)
+    source_size, preview_size = convert_original_to_webp(
+        task.original_tif, task.output_original
+    )
     convert_segmented_to_png(
         task.segmented_tif,
         task.output_segmented,
@@ -294,7 +314,9 @@ def main() -> int:
         print("[WARN] No TIFF pairs found.")
         return 0
 
-    print(f"[INFO] Found {len(tasks)} TIFF pairs across {len({task.lake for task in tasks})} lakes.")
+    print(
+        f"[INFO] Found {len(tasks)} TIFF pairs across {len({task.lake for task in tasks})} lakes."
+    )
 
     processed: list[tuple[str, dict]] = []
     total = len(tasks)
@@ -303,20 +325,27 @@ def main() -> int:
 
     if workers == 1:
         for index, task in enumerate(tasks, start=1):
-            print(f"[{index}/{total}] Processing {format_task_label(task)}...", flush=True)
+            print(
+                f"[{index}/{total}] Processing {format_task_label(task)}...", flush=True
+            )
             result = process_one(task, args.mask_threshold, args.dry_run)
             if result is not None:
                 processed.append(result)
     else:
         with ThreadPoolExecutor(max_workers=workers) as executor:
             futures = {
-                executor.submit(process_one, task, args.mask_threshold, args.dry_run): (index, task)
+                executor.submit(process_one, task, args.mask_threshold, args.dry_run): (
+                    index,
+                    task,
+                )
                 for index, task in enumerate(tasks, start=1)
             }
             for future in as_completed(futures):
                 index, task = futures[future]
                 result = future.result()
-                print(f"[{index}/{total}] Finished {format_task_label(task)}", flush=True)
+                print(
+                    f"[{index}/{total}] Finished {format_task_label(task)}", flush=True
+                )
                 if result is not None:
                     processed.append(result)
 
@@ -326,7 +355,9 @@ def main() -> int:
 
     lake_data = group_results(processed)
     output_json.write_text(json.dumps(lake_data, indent=2), encoding="utf-8")
-    print(f"[DONE] Wrote {output_json} with {sum(len(items) for items in lake_data.values())} entries.")
+    print(
+        f"[DONE] Wrote {output_json} with {sum(len(items) for items in lake_data.values())} entries."
+    )
     return 0
 
 
