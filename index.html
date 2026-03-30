@@ -676,13 +676,36 @@
 
     .timeline-track-row {
       position: relative;
-      height: 4px;
+      height: 18px;
+    }
+
+    .timeline-tick-layer {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+    }
+
+    .timeline-tick {
+      position: absolute;
+      bottom: 8px;
+      width: 4px;
+      height: 2px;
+      background: rgba(232, 237, 242, 0.28);
+      transform: translateX(-0.5px);
+    }
+
+    .timeline-tick.current {
+      background: rgba(0, 255, 157, 0.92);
+      height: 13px;
     }
 
     .timeline-track-bg,
     .timeline-track-fill {
       position: absolute;
-      inset: 0;
+      left: 0;
+      right: 0;
+      top: 7px;
+      height: 4px;
       border-radius: 999px;
       pointer-events: none;
     }
@@ -984,6 +1007,7 @@
       <div class="timeline-wrap">
         <div class="timeline-current-label" id="current-date-display">–</div>
         <div class="timeline-track-row">
+          <div class="timeline-tick-layer" id="timeline-ticks"></div>
           <div class="timeline-track-bg"></div>
           <div class="timeline-track-fill" id="track-fill"></div>
           <input type="range" id="timeline-slider" min="0" max="0" step="1" value="0">
@@ -1003,6 +1027,7 @@
     const MAX_CANVAS_PIXELS = 2_600_000;
     const PLAY_ICON = "M4 2.5l8 4.5-8 4.5V2.5z";
     const PAUSE_ICON = "M3 2h3v10H3V2zm5 0h3v10H8V2z";
+    const TIMELINE_SCALE = 1000;
 
     let lakeData = {};
     let currentLake = "";
@@ -1035,6 +1060,7 @@
     const $ = id => document.getElementById(id);
     const lakeSelect = $("lake-select");
     const timelineSlider = $("timeline-slider");
+    const timelineTicks = $("timeline-ticks");
     const dateDisplay = $("current-date-display");
     const badgeDate = $("badge-date");
     const badgeLake = $("badge-lake");
@@ -1090,6 +1116,89 @@
       setTimeout(() => {
         loadingBar.style.width = "0%";
       }, 220);
+    }
+
+    function clamp(value, min, max) {
+      return Math.min(Math.max(value, min), max);
+    }
+
+    function parseDateStamp(date) {
+      const [year, month, day] = date.split("-").map(Number);
+      return Date.UTC(year, month - 1, day);
+    }
+
+    function getTimelineMetrics(entries) {
+      const times = entries.map(entry => parseDateStamp(entry.date));
+      const start = times[0];
+      const end = times[times.length - 1];
+      const span = Math.max(end - start, 1);
+
+      return { times, start, end, span };
+    }
+
+    function getEntryProgress(entry, metrics) {
+      return (parseDateStamp(entry.date) - metrics.start) / metrics.span;
+    }
+
+    function getTimelineValue(progress) {
+      return Math.round(clamp(progress, 0, 1) * TIMELINE_SCALE);
+    }
+
+    function setTimelineFill(progress) {
+      trackFill.style.width = (clamp(progress, 0, 1) * 100) + "%";
+    }
+
+    function findClosestEntryIndex(entries, metrics, progress) {
+      if (!entries.length) return 0;
+
+      const targetTime = metrics.start + clamp(progress, 0, 1) * metrics.span;
+      let closestIndex = 0;
+      let closestDistance = Infinity;
+
+      metrics.times.forEach((time, index) => {
+        const distance = Math.abs(time - targetTime);
+        if (distance < closestDistance) {
+          closestDistance = distance;
+          closestIndex = index;
+        }
+      });
+
+      return closestIndex;
+    }
+
+    function renderTimelineTicks(entries) {
+      timelineTicks.textContent = "";
+      if (!entries || !entries.length) return;
+
+      const metrics = getTimelineMetrics(entries);
+      const fragment = document.createDocumentFragment();
+
+      entries.forEach((entry, index) => {
+        const tick = document.createElement("span");
+        tick.className = "timeline-tick" + (index === currentIndex ? " current" : "");
+        tick.style.left = (getEntryProgress(entry, metrics) * 100) + "%";
+        fragment.appendChild(tick);
+      });
+
+      timelineTicks.appendChild(fragment);
+    }
+
+    function syncTimelineControls(entries, index) {
+      if (!entries || !entries.length) return;
+
+      const metrics = getTimelineMetrics(entries);
+      const progress = getEntryProgress(entries[index], metrics);
+
+      timelineSlider.max = String(TIMELINE_SCALE);
+      timelineSlider.value = String(getTimelineValue(progress));
+      setTimelineFill(progress);
+      renderTimelineTicks(entries);
+    }
+
+    function snapTimelineToEntry(entries, metrics, progress) {
+      const index = findClosestEntryIndex(entries, metrics, progress);
+      const snappedProgress = getEntryProgress(entries[index], metrics);
+      return { index, snappedProgress };
     }
 
     function evictImageCache() {
@@ -1378,11 +1487,6 @@
       return normalized;
     }
 
-    function updateTrackFill(index, max) {
-      const pct = max > 0 ? (index / max) * 100 : 0;
-      trackFill.style.width = pct + "%";
-    }
-
     function setDateLabels(date) {
       dateDisplay.textContent = date || "–";
       badgeDate.textContent = date || "–";
@@ -1441,11 +1545,9 @@
       detailBounds.textContent = formatBounds(entry.bounds);
       $("c-entries").textContent = String(entries.length);
       $("c-zoom").textContent = map.getZoom().toFixed(1);
-      timelineSlider.max = Math.max(entries.length - 1, 0);
-      timelineSlider.value = String(index);
+      syncTimelineControls(entries, index);
       $("tl-start").textContent = entries[0].date.slice(0, 4);
       $("tl-end").textContent = entries[entries.length - 1].date.slice(0, 4);
-      updateTrackFill(index, entries.length - 1);
       updateAreaStats(entries, index);
     }
 
@@ -1664,22 +1766,33 @@
       });
 
       timelineSlider.addEventListener("input", event => {
-        const index = Number(event.target.value);
         const entries = lakeData[currentLake];
-        if (!entries || !entries[index]) return;
+        if (!entries || !entries.length) return;
 
-        setDateLabels(entries[index].date);
-        updateTrackFill(index, Math.max(entries.length - 1, 0));
+        const metrics = getTimelineMetrics(entries);
+        const progress = Number(event.target.value) / TIMELINE_SCALE;
+        const snapped = snapTimelineToEntry(entries, metrics, progress);
+
+        timelineSlider.value = String(getTimelineValue(snapped.snappedProgress));
+        setDateLabels(entries[snapped.index].date);
+        setTimelineFill(snapped.snappedProgress);
 
         clearTimeout(sliderDebounce);
         sliderDebounce = setTimeout(() => {
-          goTo(index, false);
-        }, 24);
+          goTo(snapped.index, false);
+        }, 0);
       });
 
       timelineSlider.addEventListener("change", event => {
         clearTimeout(sliderDebounce);
-        goTo(Number(event.target.value), false);
+        const entries = lakeData[currentLake];
+        if (!entries || !entries.length) return;
+
+        const metrics = getTimelineMetrics(entries);
+        const progress = Number(event.target.value) / TIMELINE_SCALE;
+        const snapped = snapTimelineToEntry(entries, metrics, progress);
+        timelineSlider.value = String(getTimelineValue(snapped.snappedProgress));
+        goTo(snapped.index, false);
       });
 
       origOpacityInput.addEventListener("input", () => {
