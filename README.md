@@ -51,17 +51,22 @@ A lightweight, end-to-end pipeline that:
 
 ## Requirements
 
-### Python
+### Python (via uv by Astral)
+- Install [`uv`](https://docs.astral.sh/uv/getting-started/installation/)
 - Python **3.12+**
 - `pillow`, `numpy` — for `process_tif.py`
 - `segment-geospatial[samgeo3]`, `huggingface_hub` — for `extract_segment.py`
 
 ```bash
+# Create and activate a local virtual environment (once per clone)
+uv venv --python 3.12
+source .venv/bin/activate
+
 # Core dependencies (always required)
-pip install pillow numpy
+uv pip install pillow numpy
 
 # Segmentation dependencies (required for extract_segment.py only)
-pip install "segment-geospatial[samgeo3]" huggingface_hub
+uv pip install "segment-geospatial[samgeo3]" huggingface_hub
 ```
 
 ### External Tool
@@ -85,7 +90,7 @@ pip install "segment-geospatial[samgeo3]" huggingface_hub
 Serve the repository locally and open the coordinate picker:
 
 ```bash
-python3 -m http.server 8000
+uv run python -m http.server 8000
 # Open http://localhost:8000/get_coordinates.html
 ```
 
@@ -113,7 +118,7 @@ Each key is the **location name** (used as directory and file prefix). `ll` = lo
 ### Step 3 — Download imagery
 
 ```bash
-python3 get_data.py -c lakes.json -z 17 \
+uv run get_data.py -c lakes.json -z 17 \
     --min-date 2006/01/01 --max-date 2025/12/31 \
     -t 100 -w 4 -b /path/to/GEHistoricalImagery
 ```
@@ -124,7 +129,7 @@ Output: `lakes/<location-name>/<location-name>-YYYY-MM-DD.tif` per date.
 
 ```bash
 export HF_TOKEN=hf_your_token_here
-python3 extract_segment.py --input-dir lakes --output-dir lakes-segmented
+uv run extract_segment.py --input-dir lakes --output-dir lakes-segmented
 ```
 
 Output: binary water mask TIFFs in `lakes-segmented/` mirroring the `lakes/` structure.
@@ -133,10 +138,10 @@ Output: binary water mask TIFFs in `lakes-segmented/` mirroring the `lakes/` str
 
 ```bash
 # Dry-run first to verify discovered pairs
-python3 process_tif.py --dry-run
+uv run process_tif.py --dry-run
 
 # Full run
-python3 process_tif.py \
+uv run process_tif.py \
     --lakes-dir lakes \
     --segmented-dir lakes-segmented \
     --previews-dir previews \
@@ -149,7 +154,7 @@ Output: `previews/`, `lake_data.json`.
 ### Step 6 — Open the viewer
 
 ```bash
-python3 -m http.server 8000
+uv run python -m http.server 8000
 # Open http://localhost:8000/index.html
 ```
 
@@ -189,14 +194,14 @@ options:
 
 ```bash
 # Single location
-python3 get_data.py \
+uv run get_data.py \
     -n bellandur-lake \
     --ll "12.92372883,77.63703272" \
     --ur "12.94905157,77.68205091" \
     -b ./GEHistoricalImagery
 
 # Multiple locations from file, custom date range
-python3 get_data.py \
+uv run get_data.py \
     -c lakes.json \
     -z 17 \
     --min-date 2010/01/01 \
@@ -232,17 +237,17 @@ environment:
 ```bash
 # Full batch (all sub-folders in lakes/)
 export HF_TOKEN=hf_your_token_here
-python3 extract_segment.py
+uv run extract_segment.py
 
 # Custom prompt and confidence
-python3 extract_segment.py \
+uv run extract_segment.py \
     -i lakes \
     -o lakes-segmented \
     -p "Lake water body" \
     --confidence 0.5
 
 # Single lake folder
-python3 extract_segment.py \
+uv run extract_segment.py \
     -i lakes/bellandur-lake \
     -o lakes-segmented/bellandur-lake
 ```
@@ -280,10 +285,10 @@ options:
 
 ```bash
 # Dry-run inspection
-python3 process_tif.py --dry-run
+uv run process_tif.py --dry-run
 
 # Standard run
-python3 process_tif.py \
+uv run process_tif.py \
     --lakes-dir lakes \
     --segmented-dir lakes-segmented \
     --previews-dir previews \
@@ -305,7 +310,7 @@ A Leaflet-based map tool for selecting bounding boxes interactively.
 Serve locally and open in a browser:
 
 ```bash
-python3 -m http.server 8000
+uv run python -m http.server 8000
 # http://localhost:8000/get_coordinates.html
 ```
 
